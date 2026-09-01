@@ -4,1008 +4,799 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Note, AppSettings } from './types';
-import { 
-  getLocalNotes, 
-  saveLocalNotes, 
-  clearAllLocalNotes,
-  getLocalSettings, 
-  saveLocalSettings, 
-  syncFromGoogleSheets, 
-  syncAllToGoogleSheets,
-  testSheetsConnection,
-  saveSingleNoteToSheets,
-  deleteSingleNoteFromSheets,
-  saveAdminCredentialsToSheets,
-  saveCategoriesToSheets,
-  fetchServerGlobalConfig,
-  saveServerGlobalConfig
-} from './utils/googleSheetsApi';
-import { getActiveGoogleSheetsUrl } from './config/appConfig';
-import { checkAndAbsorbUrlMagicLink, broadcastConfigToCloudRelay } from './utils/cloudSyncRelay';
-import { Header } from './components/Header';
-import { NoteCard } from './components/NoteCard';
-import { NoteViewer } from './components/NoteViewer';
-import { NoteEditor } from './components/NoteEditor';
-import { LoginModal } from './components/LoginModal';
-import { GoogleSheetsModal } from './components/GoogleSheetsModal';
-import { ShareModal } from './components/ShareModal';
-import { triggerSmartShare } from './utils/shareHelper';
-import { Footer } from './components/Footer';
-import { VectorDecorations } from './components/VectorDecorations';
-import { ToastContainer, ToastMessage } from './components/Toast';
-import { LoadingScreen } from './components/LoadingScreen';
-import confetti from 'canvas-confetti';
-import { 
-  Plus, 
-  FileCode2, 
-  Database, 
-  UploadCloud, 
-  DownloadCloud, 
-  Sparkles, 
-  CheckCircle2, 
-  Terminal, 
-  Code2, 
-  FolderPlus, 
-  BookOpen, 
-  Lock, 
-  ShieldCheck, 
-  LogOut 
-} from 'lucide-react';
+import { MessageSquare, BarChart3, Settings, Bot, RefreshCw, Smartphone, Laptop, Coins } from 'lucide-react';
+import { Transaction, Message, AppSettings, OfflineAction } from './types';
+import { parseTransactionText, formatRupiah } from './utils/parser';
+import { generatePDFReport } from './utils/pdfGenerator';
+import ChatInterface from './components/ChatInterface';
+import Dashboard from './components/Dashboard';
+import SettingsPanel from './components/SettingsPanel';
+
+// High quality initial seed data in Indonesian
+const SEED_TRANSACTIONS: Transaction[] = [
+  {
+    id: 'seed_1',
+    date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+    type: 'pemasukan',
+    amount: 7500000,
+    description: 'Gaji Bulanan',
+    category: 'Gaji & Pendapatan Tetap',
+    source: 'web',
+  },
+  {
+    id: 'seed_2',
+    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    type: 'pengeluaran',
+    amount: 1500000,
+    description: 'Bayar Kosan',
+    category: 'Tagihan & Utilitas',
+    source: 'web',
+  },
+  {
+    id: 'seed_3',
+    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    type: 'pengeluaran',
+    amount: 650000,
+    description: 'Belanja Bulanan Supermarket',
+    category: 'Belanja & Pribadi',
+    source: 'web',
+  },
+  {
+    id: 'seed_4',
+    date: new Date(Date.now() - 1.5 * 24 * 60 * 60 * 1000).toISOString(), // 1.5 days ago
+    type: 'pengeluaran',
+    amount: 35000,
+    description: 'Makan Bakso Lapangan Tembak',
+    category: 'Makanan & Minuman',
+    source: 'telegram',
+  },
+  {
+    id: 'seed_5',
+    date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    type: 'pemasukan',
+    amount: 1200000,
+    description: 'Freelance Landing Page UMKM',
+    category: 'Freelance & Sampingan',
+    source: 'web',
+  },
+  {
+    id: 'seed_6',
+    date: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+    type: 'pengeluaran',
+    amount: 25000,
+    description: 'Kopi Susu Aren',
+    category: 'Makanan & Minuman',
+    source: 'telegram',
+  },
+  {
+    id: 'seed_7',
+    date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    type: 'pengeluaran',
+    amount: 50000,
+    description: 'Isi Bensin Motor',
+    category: 'Transportasi',
+    source: 'web',
+  },
+];
+
+const SEED_MESSAGES: Message[] = [
+  {
+    id: 'msg_1',
+    sender: 'bot',
+    text: '👋 Halo! Saya **Bot FahKeu**. Saya di sini untuk membantu Anda mencatat pemasukan dan pengeluaran secara cepat dan menyenangkan!',
+    timestamp: '09:00',
+  },
+  {
+    id: 'msg_2',
+    sender: 'bot',
+    text: 'Anda cukup mengetik transaksi dalam bahasa alami, misalnya:\n✍️ *gaji masuk 3juta*\n✍️ *bakso 15k*\n✍️ *bayar internet 150.000*\n\nSaya akan secara otomatis merekam transaksi, mengategorikannya, dan menampilkan saldo keuangan Anda saat ini!',
+    timestamp: '09:01',
+  },
+];
+
+const DEFAULT_SETTINGS: AppSettings = {
+  googleSheetUrl: '',
+  telegramBotToken: '',
+  telegramChatId: '',
+  useCloudStorage: false,
+};
 
 export default function App() {
-  const [notes, setNotes] = useState<Note[]>(() => getLocalNotes());
-  const [settings, setSettings] = useState<AppSettings>(() => getLocalSettings());
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    return localStorage.getItem('fahnotes_admin_logged_in') === 'true';
+  const [activeTab, setActiveTab] = useState<'chat' | 'grafik' | 'pengaturan'>('chat');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  
+  const [isTyping, setIsTyping] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'loading' | 'success' | 'failed'>('idle');
+  const [isDesktopOrTablet, setIsDesktopOrTablet] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark' | 'luxury-gold'>(() => {
+    return (localStorage.getItem('catatkeu_theme') as any) || 'light';
   });
 
-  const [viewMode, setViewMode] = useState<'list' | 'viewer' | 'editor'>('list');
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
-
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isSheetsModalOpen, setIsSheetsModalOpen] = useState(false);
-  const [sheetsModalTab, setSheetsModalTab] = useState<'categories' | 'account' | 'database' | 'github_vercel'>('categories');
-  const [shareModalNote, setShareModalNote] = useState<Note | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [loadingText, setLoadingText] = useState('Memuat data, harap tunggu...');
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Semua');
-
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    const uniqueSuffix = Math.random().toString(36).substring(2, 9);
-    const id = `toast-${Date.now()}-${uniqueSuffix}`;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 2800);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  // URL query parameter routing (?note=...)
+  // Apply theme to document element
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const noteParam = params.get('note');
-    if (noteParam) {
-      const found = notes.find((n) => n.id === noteParam || n.slug === noteParam);
-      if (found) {
-        setSelectedNote(found);
-        setViewMode('viewer');
-      }
+    const root = document.documentElement;
+    root.classList.remove('dark', 'luxury-gold');
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else if (theme === 'luxury-gold') {
+      root.classList.add('dark', 'luxury-gold');
     }
-  }, [notes]);
+    localStorage.setItem('catatkeu_theme', theme);
+  }, [theme]);
 
-  // Initial auto-pull from Google Sheets & Global Server Config (Nationwide Cross-Device Sync)
+  // Responsive layout detection (Desktop / Tablet)
   useEffect(() => {
-    let isMounted = true;
-    const startInit = async () => {
-      setLoadingText('Menghubungkan basis data...');
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    setIsDesktopOrTablet(mediaQuery.matches);
 
-      // 0. Check and absorb magic link from URL (e.g. #s=BASE64_URL)
-      const absorbed = checkAndAbsorbUrlMagicLink();
-      if (absorbed && absorbed.googleSheetsWebAppUrl) {
-        const mergedFromLink: AppSettings = {
-          ...settings,
-          googleSheetsWebAppUrl: absorbed.googleSheetsWebAppUrl,
-          isSheetsConnected: true
-        };
-        setSettings(mergedFromLink);
-        saveLocalSettings(mergedFromLink);
-      }
-
-      let activeUrl = getActiveGoogleSheetsUrl(absorbed?.googleSheetsWebAppUrl || settings.googleSheetsWebAppUrl);
-
-      try {
-        // 1. Fetch server global configuration (shared across all devices & users nationwide)
-        const serverRes = await fetchServerGlobalConfig();
-        if (serverRes.success && serverRes.config) {
-          const sConf = serverRes.config;
-          if (sConf.googleSheetsWebAppUrl && sConf.googleSheetsWebAppUrl.startsWith('http')) {
-            activeUrl = sConf.googleSheetsWebAppUrl;
-          }
-          if (Array.isArray(sConf.notes) && sConf.notes.length > 0 && (!notes || notes.length === 0)) {
-            if (isMounted) {
-              setNotes(sConf.notes);
-              saveLocalNotes(sConf.notes);
-            }
-          }
-          const merged: AppSettings = {
-            ...settings,
-            googleSheetsWebAppUrl: activeUrl || settings.googleSheetsWebAppUrl,
-            isSheetsConnected: Boolean(activeUrl || settings.googleSheetsWebAppUrl),
-            adminUsername: sConf.adminUsername || settings.adminUsername,
-            adminPasswordHash: sConf.adminPasswordHash || settings.adminPasswordHash,
-            authorName: sConf.authorName || settings.authorName,
-            categories: sConf.categories && sConf.categories.length > 0 ? sConf.categories : settings.categories,
-            lastSyncedAt: sConf.lastSyncedAt || settings.lastSyncedAt
-          };
-          if (isMounted) {
-            setSettings(merged);
-            saveLocalSettings(merged);
-          }
-        }
-      } catch (e) {
-        console.warn('Server global config fetch warning:', e);
-      }
-
-      // 2. If active Google Sheets URL is available, sync directly with Google Sheets for latest live notes
-      if (activeUrl && activeUrl.startsWith('http')) {
-        setLoadingText('Sinkronisasi catatan terbaru...');
-        try {
-          const res = await syncFromGoogleSheets(activeUrl);
-          if (isMounted && res.success) {
-            if (res.notes) {
-              setNotes(res.notes);
-              saveLocalNotes(res.notes);
-              // Update server cache too so other devices load instantly
-              saveServerGlobalConfig({
-                notes: res.notes,
-                lastSyncedAt: new Date().toISOString()
-              }).catch(() => {});
-            }
-            const updated: AppSettings = {
-              ...settings,
-              googleSheetsWebAppUrl: activeUrl,
-              isSheetsConnected: true,
-              lastSyncedAt: new Date().toISOString(),
-              categories: res.categories && res.categories.length > 0 ? res.categories : settings.categories,
-              adminUsername: res.settings?.adminUsername || settings.adminUsername,
-              adminPasswordHash: res.settings?.adminPassword || settings.adminPasswordHash
-            };
-            setSettings(updated);
-            saveLocalSettings(updated);
-          }
-        } catch (e) {
-          console.error('Initial sheets sync error:', e);
-        }
-      }
-      
-      // Smooth visual transition delay for the loading animation
-      setTimeout(() => {
-        if (isMounted) setIsInitialLoading(false);
-      }, 700);
+    const handler = (e: MediaQueryListEvent) => {
+      setIsDesktopOrTablet(e.matches);
     };
 
-    startInit();
-
-    return () => {
-      isMounted = false;
-    };
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Real-time Background Polling across devices (Runs quietly when not actively editing)
+  // Load Settings & Data on Mount
   useEffect(() => {
-    const liveInterval = setInterval(async () => {
-      // Don't disturb if user is in note editor mode or syncing
-      if (viewMode === 'editor' || isSyncing || isInitialLoading) return;
-      if (document.hidden) return; // Save bandwidth when tab not focused
-
+    // 1. Settings
+    const storedSettings = localStorage.getItem('catatkeu_settings');
+    let parsedSettings = DEFAULT_SETTINGS;
+    if (storedSettings) {
       try {
-        const serverRes = await fetchServerGlobalConfig();
-        if (serverRes.success && serverRes.config) {
-          const sConf = serverRes.config;
-          // If server has a new or updated Web App URL
-          if (sConf.googleSheetsWebAppUrl && sConf.googleSheetsWebAppUrl !== settings.googleSheetsWebAppUrl) {
-            const updated: AppSettings = {
-              ...settings,
-              googleSheetsWebAppUrl: sConf.googleSheetsWebAppUrl,
-              isSheetsConnected: true,
-              adminUsername: sConf.adminUsername || settings.adminUsername,
-              adminPasswordHash: sConf.adminPasswordHash || settings.adminPasswordHash,
-              categories: sConf.categories || settings.categories
-            };
-            setSettings(updated);
-            saveLocalSettings(updated);
-          }
-
-          // If server cached notes were updated by another device
-          if (Array.isArray(sConf.notes) && sConf.notes.length > 0) {
-            const remoteNotesStr = JSON.stringify(sConf.notes);
-            const currentNotesStr = JSON.stringify(notes);
-            if (remoteNotesStr !== currentNotesStr) {
-              setNotes(sConf.notes);
-              saveLocalNotes(sConf.notes);
-            }
-          }
-        }
-      } catch {
-        // Silent fail on background polling
-      }
-    }, 10000); // Check every 10s
-
-    return () => clearInterval(liveInterval);
-  }, [settings.googleSheetsWebAppUrl, viewMode, isSyncing, isInitialLoading, notes]);
-
-  const handleUpdateNotes = (newNotes: Note[]) => {
-    setNotes(newNotes);
-    saveLocalNotes(newNotes);
-
-    // Broadcast to server global config so all devices nationwide get updated immediately
-    saveServerGlobalConfig({
-      notes: newNotes,
-      lastSyncedAt: new Date().toISOString()
-    }).catch(() => {});
-
-    if (settings.googleSheetsWebAppUrl) {
-      syncAllToGoogleSheets(settings.googleSheetsWebAppUrl, newNotes, settings).catch(() => {});
-    }
-  };
-
-  const handleLogin = (user: string, pass: string): boolean => {
-    if (
-      user.toLowerCase() === settings.adminUsername.toLowerCase() &&
-      pass === settings.adminPasswordHash
-    ) {
-      setIsAdmin(true);
-      localStorage.setItem('fahnotes_admin_logged_in', 'true');
-      return true;
-    }
-    return false;
-  };
-
-  const handleLogout = () => {
-    setIsAdmin(false);
-    localStorage.removeItem('fahnotes_admin_logged_in');
-    addToast('Mode Admin ditutup', 'info');
-  };
-
-  const handleOpenSheetsModal = (tab: 'categories' | 'account' | 'database' | 'github_vercel' = 'categories') => {
-    setSheetsModalTab(tab);
-    setIsSheetsModalOpen(true);
-  };
-
-  // Master Category List (Dynamic from settings.categories + notes)
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    set.add('Semua');
-
-    // Add preset/configured categories
-    (settings.categories || []).forEach((c) => {
-      if (c && c.trim()) set.add(c.trim());
-    });
-
-    // Add categories present in current notes
-    notes.forEach((n) => {
-      if (isAdmin || n.isPublic !== false) {
-        if (n.category) set.add(n.category.trim());
-      }
-    });
-
-    return Array.from(set);
-  }, [notes, settings.categories, isAdmin]);
-
-  // Categories list without 'Semua' for management
-  const editableCategories = useMemo(() => {
-    return categories.filter((c) => c !== 'Semua');
-  }, [categories]);
-
-  // --- Category CRUD Actions ---
-  const handleAddCategory = async (newCategory: string) => {
-    const clean = newCategory.trim();
-    if (!clean) return;
-    const currentList = settings.categories || ['BAT Script', 'HTML / Web', 'Python', 'JavaScript', 'Otomasi', 'Tutorial'];
-    if (currentList.some((c) => c.toLowerCase() === clean.toLowerCase())) return;
-
-    const updatedCategories = [...currentList, clean];
-    const updatedSettings = {
-      ...settings,
-      categories: updatedCategories
-    };
-    setSettings(updatedSettings);
-    saveLocalSettings(updatedSettings);
-
-    // Save to global server config for all devices
-    saveServerGlobalConfig({
-      categories: updatedCategories,
-      notes: notes
-    }).catch(() => {});
-
-    addToast(`Kategori "${clean}" berhasil ditambahkan!`, 'success');
-
-    if (settings.googleSheetsWebAppUrl) {
-      saveCategoriesToSheets(settings.googleSheetsWebAppUrl, updatedCategories, notes).catch(() => {});
-    }
-  };
-
-  const handleEditCategory = async (oldCategory: string, newCategory: string) => {
-    const clean = newCategory.trim();
-    if (!clean || clean === oldCategory) return;
-
-    const currentList = settings.categories || ['BAT Script', 'HTML / Web', 'Python', 'JavaScript', 'Otomasi', 'Tutorial'];
-    const updatedCategories = currentList.map((c) => (c.toLowerCase() === oldCategory.toLowerCase() ? clean : c));
-    if (!updatedCategories.includes(clean)) {
-      updatedCategories.push(clean);
-    }
-
-    const updatedSettings = {
-      ...settings,
-      categories: updatedCategories
-    };
-    setSettings(updatedSettings);
-    saveLocalSettings(updatedSettings);
-
-    // Update all notes with the old category
-    let noteUpdatedCount = 0;
-    const updatedNotes = notes.map((n) => {
-      if (n.category.toLowerCase() === oldCategory.toLowerCase()) {
-        noteUpdatedCount++;
-        return { ...n, category: clean };
-      }
-      return n;
-    });
-
-    if (noteUpdatedCount > 0) {
-      setNotes(updatedNotes);
-      saveLocalNotes(updatedNotes);
-    }
-
-    // Save to global server config for all devices
-    saveServerGlobalConfig({
-      categories: updatedCategories,
-      notes: noteUpdatedCount > 0 ? updatedNotes : notes
-    }).catch(() => {});
-
-    if (selectedCategory === oldCategory) {
-      setSelectedCategory(clean);
-    }
-
-    addToast(`Kategori diperbarui menjadi "${clean}" (${noteUpdatedCount} catatan diupdate)!`, 'success');
-
-    if (settings.googleSheetsWebAppUrl) {
-      saveCategoriesToSheets(settings.googleSheetsWebAppUrl, updatedCategories, updatedNotes).catch(() => {});
-      if (noteUpdatedCount > 0) {
-        syncAllToGoogleSheets(settings.googleSheetsWebAppUrl, updatedNotes, updatedSettings).catch(() => {});
+        parsedSettings = JSON.parse(storedSettings);
+        setSettings(parsedSettings);
+      } catch (e) {
+        console.error('Failed to parse settings');
       }
     }
-  };
 
-  const handleDeleteCategory = async (categoryToDelete: string) => {
-    const currentList = settings.categories || ['BAT Script', 'HTML / Web', 'Python', 'JavaScript', 'Otomasi', 'Tutorial'];
-    const updatedCategories = currentList.filter((c) => c.toLowerCase() !== categoryToDelete.toLowerCase());
-
-    const updatedSettings = {
-      ...settings,
-      categories: updatedCategories
-    };
-    setSettings(updatedSettings);
-    saveLocalSettings(updatedSettings);
-
-    // Reassign affected notes to 'Umum'
-    let noteReassignedCount = 0;
-    const updatedNotes = notes.map((n) => {
-      if (n.category.toLowerCase() === categoryToDelete.toLowerCase()) {
-        noteReassignedCount++;
-        return { ...n, category: 'Umum' };
+    // 2. Chat history
+    const storedMessages = localStorage.getItem('catatkeu_chat_history');
+    if (storedMessages) {
+      try {
+        setMessages(JSON.parse(storedMessages));
+      } catch (e) {
+        setMessages(SEED_MESSAGES);
       }
-      return n;
-    });
-
-    if (noteReassignedCount > 0) {
-      setNotes(updatedNotes);
-      saveLocalNotes(updatedNotes);
-    }
-
-    // Save to global server config for all devices
-    saveServerGlobalConfig({
-      categories: updatedCategories,
-      notes: noteReassignedCount > 0 ? updatedNotes : notes
-    }).catch(() => {});
-
-    if (selectedCategory === categoryToDelete) {
-      setSelectedCategory('Semua');
-    }
-
-    addToast(`Kategori "${categoryToDelete}" dihapus.`, 'info');
-
-    if (settings.googleSheetsWebAppUrl) {
-      saveCategoriesToSheets(settings.googleSheetsWebAppUrl, updatedCategories, updatedNotes).catch(() => {});
-      if (noteReassignedCount > 0) {
-        syncAllToGoogleSheets(settings.googleSheetsWebAppUrl, updatedNotes, updatedSettings).catch(() => {});
-      }
-    }
-  };
-
-  const handleSyncCategoriesToSheets = async () => {
-    if (!settings.googleSheetsWebAppUrl) {
-      addToast('Masukkan URL Web App Google Sheets terlebih dahulu!', 'error');
-      return;
-    }
-    setIsSyncing(true);
-    const res = await saveCategoriesToSheets(settings.googleSheetsWebAppUrl, editableCategories, notes);
-    setIsSyncing(false);
-    if (res.success) {
-      addToast('Daftar kategori berhasil disinkronkan ke Google Spreadsheet!', 'success');
     } else {
-      addToast(res.error || 'Gagal sinkronisasi kategori ke Spreadsheet.', 'error');
+      setMessages(SEED_MESSAGES);
     }
-  };
 
-  // --- Admin Account Credentials Action ---
-  const handleUpdateAdminCredentials = async (newUsername: string, newPassword: string): Promise<boolean> => {
-    const updatedSettings: AppSettings = {
-      ...settings,
-      adminUsername: newUsername.trim(),
-      adminPasswordHash: newPassword.trim(),
-      authorName: newUsername.trim()
-    };
-    setSettings(updatedSettings);
-    saveLocalSettings(updatedSettings);
-
-    // Broadcast credentials to global server config
-    saveServerGlobalConfig({
-      adminUsername: newUsername.trim(),
-      adminPasswordHash: newPassword.trim(),
-      authorName: newUsername.trim()
-    }).catch(() => {});
-
-    if (settings.googleSheetsWebAppUrl) {
-      const res = await saveAdminCredentialsToSheets(settings.googleSheetsWebAppUrl, newUsername.trim(), newPassword.trim());
-      if (res.success) {
-        addToast('Kredensial Admin berhasil disimpan & disinkronkan ke seluruh perangkat!', 'success');
-        return true;
+    // 3. Transactions
+    const storedTrans = localStorage.getItem('catatkeu_transactions');
+    if (storedTrans) {
+      try {
+        setTransactions(JSON.parse(storedTrans));
+      } catch (e) {
+        setTransactions([]);
       }
-    }
-    addToast('Kredensial Admin diperbarui secara global.', 'success');
-    return false;
-  };
-
-  const filteredNotes = useMemo(() => {
-    return notes.filter((note) => {
-      // If user is not admin, hide unlisted/private notes
-      if (!isAdmin && note.isPublic === false) return false;
-
-      const matchesCategory =
-        selectedCategory === 'Semua' || note.category === selectedCategory;
-
-      if (!matchesCategory) return false;
-      if (!searchQuery.trim()) return true;
-
-      const q = searchQuery.toLowerCase();
-      const matchTitle = note.title.toLowerCase().includes(q);
-      const matchDesc = note.description.toLowerCase().includes(q);
-      const matchCat = note.category.toLowerCase().includes(q);
-      const matchBlock = (note.blocks || []).some((b) => {
-        if (b.type === 'text') return b.content.toLowerCase().includes(q);
-        if (b.type === 'code')
-          return (
-            b.title.toLowerCase().includes(q) ||
-            b.code.toLowerCase().includes(q) ||
-            b.language.toLowerCase().includes(q)
-          );
-        return false;
-      });
-
-      return matchTitle || matchDesc || matchCat || matchBlock;
-    });
-  }, [notes, selectedCategory, searchQuery, isAdmin]);
-
-  const handleOpenNote = (note: Note) => {
-    setSelectedNote(note);
-    setViewMode('viewer');
-    const newUrl = `${window.location.pathname}?note=${note.id}`;
-    window.history.pushState({ noteId: note.id }, '', newUrl);
-  };
-
-  const handleBackToList = () => {
-    setViewMode('list');
-    setSelectedNote(null);
-    setEditingNote(null);
-    window.history.pushState({}, '', window.location.pathname);
-  };
-
-  const handleStartCreateNote = () => {
-    if (!isAdmin) {
-      setIsLoginOpen(true);
-      addToast('Login admin (admin / admin123) untuk menulis atau mengedit', 'info');
-      return;
-    }
-    setEditingNote(null);
-    setViewMode('editor');
-  };
-
-  const handleStartEditNote = (note: Note) => {
-    if (!isAdmin) {
-      setIsLoginOpen(true);
-      addToast('Hanya admin yang dapat mengedit catatan', 'info');
-      return;
-    }
-    setEditingNote(note);
-    setViewMode('editor');
-  };
-
-  const handleSaveNote = (savedNote: Note) => {
-    let updated: Note[];
-    const exists = notes.some((n) => n.id === savedNote.id);
-    if (exists) {
-      updated = notes.map((n) => (n.id === savedNote.id ? savedNote : n));
-      addToast('Catatan berhasil diperbarui!', 'success');
     } else {
-      updated = [savedNote, ...notes];
-      addToast('Catatan baru berhasil ditambahkan!', 'success');
-      confetti({ particleCount: 35, spread: 60, origin: { y: 0.6 } });
+      setTransactions([]);
     }
+  }, []);
 
-    handleUpdateNotes(updated);
-    setSelectedNote(savedNote);
-    setViewMode('viewer');
+  // Save changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('catatkeu_transactions', JSON.stringify(transactions));
+  }, [transactions]);
 
-    // Automatic Direct CRUD Sync to Google Spreadsheet
-    if (settings.googleSheetsWebAppUrl) {
-      saveSingleNoteToSheets(settings.googleSheetsWebAppUrl, savedNote)
-        .then((res) => {
-          if (res.success) {
-            console.log('Single note upserted to Google Sheets:', savedNote.id);
-          }
-        })
-        .catch((err) => {
-          console.warn('Background single note sync:', err);
-        });
+  useEffect(() => {
+    localStorage.setItem('catatkeu_chat_history', JSON.stringify(messages));
+  }, [messages]);
+
+  // Sync data automatically if Sheets URL is configured
+  useEffect(() => {
+    if (settings.googleSheetUrl && settings.useCloudStorage) {
+      syncWithGoogleSheets();
     }
-  };
+  }, [settings.googleSheetUrl, settings.useCloudStorage]);
 
-  const handleDeleteNote = (id: string) => {
-    const targetNote = notes.find((n) => n.id === id);
-    const noteTitle = targetNote?.title || 'Catatan';
-    if (window.confirm(`Hapus catatan "${noteTitle}" secara permanen?`)) {
-      const updated = notes.filter((n) => n.id !== id);
-      handleUpdateNotes(updated);
-      addToast(`Catatan "${noteTitle}" berhasil dihapus!`, 'info');
-      
-      if (selectedNote?.id === id) {
-        handleBackToList();
+  // Calculate Cumulative Balance
+  const totalBalance = useMemo(() => {
+    return transactions.reduce((acc, curr) => {
+      if (curr.type === 'pemasukan') {
+        return acc + curr.amount;
+      } else {
+        return acc - curr.amount;
       }
-
-      // Automatic Direct CRUD Delete in Google Spreadsheet
-      if (settings.googleSheetsWebAppUrl) {
-        deleteSingleNoteFromSheets(settings.googleSheetsWebAppUrl, id)
-          .then((res) => {
-            if (res.success) {
-              console.log('Single note deleted from Google Sheets:', id);
-            }
-          })
-          .catch((err) => {
-            console.warn('Background note delete sync:', err);
-          });
-      }
-    }
-  };
-
-  const handleClearAllNotes = () => {
-    if (window.confirm('Apakah Anda yakin ingin mengosongkan seluruh konten (0 Catatan)?')) {
-      clearAllLocalNotes();
-      setNotes([]);
-      if (settings.googleSheetsWebAppUrl) {
-        syncAllToGoogleSheets(settings.googleSheetsWebAppUrl, [], settings).catch(() => {});
-      }
-      addToast('Seluruh konten telah dibersihkan menjadi 0 catatan.', 'info');
-      handleBackToList();
-    }
-  };
-
-  const handleSyncAllToSheets = async () => {
-    if (!settings.googleSheetsWebAppUrl) {
-      setIsSheetsModalOpen(true);
-      addToast('Masukkan URL Web App Google Apps Script terlebih dahulu!', 'error');
-      return;
-    }
-    setIsSyncing(true);
-    const res = await syncAllToGoogleSheets(settings.googleSheetsWebAppUrl, notes, settings);
-    setIsSyncing(false);
-    if (res.success) {
-      confetti({ particleCount: 45, spread: 70, origin: { y: 0.5 } });
-      addToast(res.message || '⚡ Seluruh catatan & 13 kolom otomatis terbuat di Spreadsheet!', 'success');
-      const updatedSettings = {
-        ...settings,
-        isSheetsConnected: true,
-        lastSyncedAt: new Date().toISOString()
-      };
-      setSettings(updatedSettings);
-      saveLocalSettings(updatedSettings);
-    } else {
-      addToast(res.error || 'Gagal sinkronisasi ke Spreadsheet.', 'error');
-    }
-  };
-
-  const handlePullFromSheets = async () => {
-    if (!settings.googleSheetsWebAppUrl) {
-      setIsSheetsModalOpen(true);
-      addToast('Masukkan URL Web App terlebih dahulu!', 'error');
-      return;
-    }
-    setLoadingText('Memuat data terbaru...');
-    setIsSyncing(true);
-    const res = await syncFromGoogleSheets(settings.googleSheetsWebAppUrl);
-    setIsSyncing(false);
-    if (res.success && res.notes) {
-      setNotes(res.notes);
-      saveLocalNotes(res.notes);
-      confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
-      addToast(`Berhasil menarik ${res.notes.length} catatan dari Spreadsheet!`, 'success');
-    } else {
-      addToast(res.error || 'Gagal mengambil data dari Google Sheets.', 'error');
-    }
-  };
-
-  const handleTestConnection = async () => {
-    if (!settings.googleSheetsWebAppUrl) {
-      addToast('Masukkan URL Web App terlebih dahulu!', 'error');
-      return;
-    }
-    setIsSyncing(true);
-    const res = await testSheetsConnection(settings.googleSheetsWebAppUrl);
-    setIsSyncing(false);
-    if (res.success) {
-      addToast(res.message, 'success');
-      const updated = { ...settings, isSheetsConnected: true };
-      setSettings(updated);
-      saveLocalSettings(updated);
-    } else {
-      addToast(res.message, 'error');
-    }
-  };
-
-  const handleSaveSheetsUrl = async (url: string) => {
-    const cleanUrl = url.trim();
-    const updated = {
-      ...settings,
-      googleSheetsWebAppUrl: cleanUrl,
-      isSheetsConnected: Boolean(cleanUrl)
-    };
-    setSettings(updated);
-    saveLocalSettings(updated);
-
-    // 1. Broadcast to Cloud Relay & Vercel API
-    broadcastConfigToCloudRelay({
-      googleSheetsWebAppUrl: cleanUrl,
-      adminUsername: settings.adminUsername,
-      adminPasswordHash: settings.adminPasswordHash,
-      categories: settings.categories
-    }).catch(() => {});
-
-    // 2. Persist to server global config so all devices and visitors nationwide get the link automatically
-    try {
-      await saveServerGlobalConfig({
-        googleSheetsWebAppUrl: cleanUrl,
-        isSheetsConnected: Boolean(cleanUrl),
-        adminUsername: settings.adminUsername,
-        adminPasswordHash: settings.adminPasswordHash,
-        categories: settings.categories
-      });
-      addToast('⚡ URL tersimpan & otomatis aktif untuk seluruh perangkat se-Indonesia!', 'success');
-    } catch {
-      addToast('URL Web App Google Sheets disimpan secara lokal!', 'success');
-    }
-
-    if (cleanUrl.startsWith('http')) {
-      handlePullFromSheets();
-    }
-  };
-
-  const totalCodeSnippets = useMemo(() => {
-    return notes.reduce((acc, note) => {
-      return acc + (note.blocks || []).filter((b) => b.type === 'code').length;
     }, 0);
-  }, [notes]);
+  }, [transactions]);
 
-  const handleUpdateSettings = (updated: Partial<AppSettings>) => {
-    const merged: AppSettings = {
-      ...settings,
-      ...updated,
-    };
-    setSettings(merged);
-    saveLocalSettings(merged);
-    addToast('Pengaturan nozzle bagikan berhasil diperbarui!', 'success');
+  // Get current time formatted (HH:MM)
+  const getCurrentTime = () => {
+    const d = new Date();
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
-  const handleShareNote = (targetNote: Note) => {
-    triggerSmartShare({
-      note: targetNote,
-      settings,
-      onShowToast: addToast,
-      onOpenModalFallback: () => setShareModalNote(targetNote),
-    });
+  const [isSyncingOffline, setIsSyncingOffline] = useState(false);
+
+  // Helper to add an action to offline queue
+  const queueOfflineAction = (action: Omit<OfflineAction, 'id'>) => {
+    const storedQueue = localStorage.getItem('catatkeu_offline_queue');
+    let queue: OfflineAction[] = [];
+    if (storedQueue) {
+      try {
+        queue = JSON.parse(storedQueue);
+      } catch (e) {
+        queue = [];
+      }
+    }
+    const newAction: OfflineAction = {
+      ...action,
+      id: `act_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
+    };
+    queue.push(newAction);
+    localStorage.setItem('catatkeu_offline_queue', JSON.stringify(queue));
+  };
+
+  // Helper to process any pending offline transactions when we go online
+  const processOfflineQueue = async () => {
+    if (!settings.googleSheetUrl || !settings.useCloudStorage || isSyncingOffline) return;
+
+    const storedQueue = localStorage.getItem('catatkeu_offline_queue');
+    if (!storedQueue) return;
+
+    let queue: OfflineAction[] = [];
+    try {
+      queue = JSON.parse(storedQueue);
+    } catch (e) {
+      return;
+    }
+
+    if (queue.length === 0) return;
+
+    setIsSyncingOffline(true);
+    setSyncStatus('loading');
+
+    const remainingQueue = [...queue];
+
+    try {
+      for (const item of queue) {
+        let payload: any = null;
+        if (item.action === 'add') {
+          payload = { action: 'add', transaction: item.transaction };
+        } else if (item.action === 'delete') {
+          payload = { action: 'delete', id: item.transactionId };
+        } else if (item.action === 'clear') {
+          payload = { action: 'clear' };
+        }
+
+        if (payload) {
+          await fetch(settings.googleSheetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        }
+
+        // Successfully sent, pop from memory and localStorage
+        remainingQueue.shift();
+        localStorage.setItem('catatkeu_offline_queue', JSON.stringify(remainingQueue));
+      }
+
+      // Refresh data from sheets to align local and sheet state
+      await syncWithGoogleSheets();
+    } catch (err) {
+      console.error('Failed to flush offline queue to cloud:', err);
+      setSyncStatus('failed');
+    } finally {
+      setIsSyncingOffline(false);
+    }
+  };
+
+  // Process offline queue on mount or when online event is triggered
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('Online detected. Syncing offline data...');
+      processOfflineQueue();
+    };
+
+    window.addEventListener('online', handleOnline);
+
+    if (navigator.onLine) {
+      processOfflineQueue();
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [settings.googleSheetUrl, settings.useCloudStorage, isSyncingOffline]);
+
+  // Sync / Fetch Transactions from Google Sheets Web App
+  const syncWithGoogleSheets = async () => {
+    if (!settings.googleSheetUrl) return;
+    setSyncStatus('loading');
+    try {
+      // Simple fetch GET request pulls data as JSON
+      const res = await fetch(settings.googleSheetUrl);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setTransactions(data.data);
+        setSyncStatus('success');
+      } else {
+        setSyncStatus('failed');
+      }
+    } catch (err) {
+      console.error('Error syncing with sheets:', err);
+      setSyncStatus('failed');
+    }
+  };
+
+  // Handles adding transaction to local + cloud
+  const handleAddTransaction = async (newT: Transaction) => {
+    // 1. Snappy Local Update
+    const updated = [newT, ...transactions];
+    setTransactions(updated);
+
+    // 2. Cloud Update if enabled
+    if (settings.googleSheetUrl && settings.useCloudStorage) {
+      try {
+        await fetch(settings.googleSheetUrl, {
+          method: 'POST',
+          mode: 'no-cors', // bypass CORS preflight restrictions beautifully for script.google.com
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'add',
+            transaction: newT,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to post transaction to cloud, queuing for offline sync:', err);
+        queueOfflineAction({ action: 'add', transaction: newT });
+      }
+    }
+  };
+
+  // Handles deleting single transaction
+  const handleDeleteTransaction = async (id: string) => {
+    setTransactions(transactions.filter((t) => t.id !== id));
+
+    if (settings.googleSheetUrl && settings.useCloudStorage) {
+      try {
+        await fetch(settings.googleSheetUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'delete',
+            id,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to delete transaction on cloud, queuing for offline sync:', err);
+        queueOfflineAction({ action: 'delete', transactionId: id });
+      }
+    }
+  };
+
+  // Handles deleting multiple transactions
+  const handleDeleteMultipleTransactions = async (ids: string[]) => {
+    setTransactions(prev => prev.filter((t) => !ids.includes(t.id)));
+
+    if (settings.googleSheetUrl && settings.useCloudStorage) {
+      try {
+        await Promise.all(
+          ids.map(id =>
+            fetch(settings.googleSheetUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'delete',
+                id,
+              }),
+            })
+          )
+        );
+      } catch (err) {
+        console.error('Failed to batch delete transactions on cloud, queuing for offline sync:', err);
+        ids.forEach(id => {
+          queueOfflineAction({ action: 'delete', transactionId: id });
+        });
+      }
+    }
+  };
+
+  // Handles clearing all data
+  const handleClearTransactions = async () => {
+    setTransactions([]);
+    localStorage.removeItem('catatkeu_transactions');
+
+    if (settings.googleSheetUrl && settings.useCloudStorage) {
+      try {
+        await fetch(settings.googleSheetUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'clear',
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to clear transactions on cloud, queuing for offline sync:', err);
+        queueOfflineAction({ action: 'clear' });
+      }
+    }
+  };
+
+  // Handles clearing chat history
+  const handleClearChat = () => {
+    setMessages([]);
+    localStorage.setItem('catatkeu_chat_history', JSON.stringify([]));
+  };
+
+  // Handles directly recorded transactions (e.g. from receipt OCR scan)
+  const handleDirectTransaction = (tx: {
+    type: 'pemasukan' | 'pengeluaran';
+    amount: number;
+    description: string;
+    category: string;
+  }) => {
+    const newTransaction: Transaction = {
+      id: `tx_${Date.now()}`,
+      date: new Date().toISOString(),
+      type: tx.type,
+      amount: tx.amount,
+      description: tx.description,
+      category: tx.category,
+      source: 'web',
+    };
+
+    handleAddTransaction(newTransaction);
+
+    const userMsgId = `msg_${Date.now()}`;
+    const userMsg: Message = {
+      id: userMsgId,
+      sender: 'user',
+      text: `🧾 Mengunggah struk/nota: "${tx.description}"`,
+      timestamp: getCurrentTime(),
+    };
+
+    const balanceAfter = totalBalance + (tx.type === 'pemasukan' ? tx.amount : -tx.amount);
+    const botMsgId = `msg_${Date.now() + 1}`;
+    const feedbackWord = tx.type === 'pemasukan' ? 'pemasukan' : 'pengeluaran';
+    const detailFeedbackWord = tx.type === 'pemasukan' ? 'uang masuk' : 'uang keluar';
+    const botMsg: Message = {
+      id: botMsgId,
+      sender: 'bot',
+      text: `Hasil scan struk berhasil dicatat! 🧾✨\nAda ${feedbackWord} **${tx.description}** sebesar **${formatRupiah(tx.amount)}** (${tx.category}). Sisa saldo Anda sekarang menjadi **${formatRupiah(balanceAfter)}**.`,
+      timestamp: getCurrentTime(),
+      parsedTransaction: {
+        type: tx.type,
+        amount: tx.amount,
+        description: tx.description,
+        category: tx.category,
+        feedback: `${detailFeedbackWord} ${formatRupiah(tx.amount)}`,
+        balanceAfter: balanceAfter,
+      }
+    };
+
+    setMessages((prev) => [...prev, userMsg, botMsg]);
+  };
+
+  // Generate PDF report for selected period and trigger download
+  const handleGeneratePDFReport = (period: 'all' | 'week' | 'month' | 'year') => {
+    let filtered = [...transactions];
+    let periodName = 'Semua Transaksi';
+
+    if (period === 'week') {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      filtered = transactions.filter(t => new Date(t.date) >= sevenDaysAgo);
+      periodName = '7 Hari Terakhir (Minggu Ini)';
+    } else if (period === 'month') {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      filtered = transactions.filter(t => new Date(t.date) >= thirtyDaysAgo);
+      periodName = '30 Hari Terakhir (Bulan Ini)';
+    } else if (period === 'year') {
+      const currentYear = new Date().getFullYear();
+      filtered = transactions.filter(t => new Date(t.date).getFullYear() === currentYear);
+      periodName = `Tahun ${currentYear}`;
+    }
+
+    generatePDFReport(filtered, periodName);
+
+    const successReply: Message = {
+      id: `msg_pdf_ok_${Date.now()}`,
+      sender: 'bot',
+      text: `✅ **Laporan PDF Berhasil Dibuat!**\n\nRekapitulasi untuk periode **${periodName}** (${filtered.length} transaksi) berhasil diunduh secara otomatis ke perangkat Anda.\n\n_Jika unduhan tidak berjalan otomatis, silakan klik tombol unduh di bawah ini:_`,
+      timestamp: getCurrentTime(),
+      pdfPeriod: period,
+    };
+    
+    setMessages((prev) => [...prev, successReply]);
+  };
+
+  // Handles user messages sent from Chat component
+  const handleUserMessage = (text: string) => {
+    const cleanText = text.toLowerCase().trim();
+
+    // Check if user wants to clear the chat via message command
+    if (
+      cleanText === 'hapus chat' ||
+      cleanText === 'bersihkan chat' ||
+      cleanText === 'hapus riwayat' ||
+      cleanText === 'hapus semua chat' ||
+      cleanText === 'clear chat' ||
+      cleanText === 'hapus semua'
+    ) {
+      handleClearChat();
+      return;
+    }
+
+    const userMsgId = `msg_${Date.now()}`;
+    const userMsg: Message = {
+      id: userMsgId,
+      sender: 'user',
+      text,
+      timestamp: getCurrentTime(),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setIsTyping(true);
+
+    // Handle bot reply after 800ms
+    setTimeout(() => {
+      setIsTyping(false);
+      const cleanText = text.toLowerCase().trim();
+
+      // Check if user just queried for balance
+      if (cleanText === 'sisa saldo' || cleanText === 'saldo' || cleanText === 'cek saldo') {
+        const income = transactions.filter(t => t.type === 'pemasukan').reduce((a, b) => a + b.amount, 0);
+        const expense = transactions.filter(t => t.type === 'pengeluaran').reduce((a, b) => a + b.amount, 0);
+        
+        const balanceReply: Message = {
+          id: `msg_${Date.now()}`,
+          sender: 'bot',
+          text: `📊 **Status Keuangan Anda saat ini:**\n\n• Sisa Saldo: **${formatRupiah(totalBalance)}**\n• Total Pemasukan: ${formatRupiah(income)}\n• Total Pengeluaran: ${formatRupiah(expense)}`,
+          timestamp: getCurrentTime(),
+        };
+        setMessages((prev) => [...prev, balanceReply]);
+        return;
+      }
+
+      // Check if user is asking for PDF / rekapitulasi download
+      const pdfTriggers = [
+        'download rekap', 'unduh rekap', 'rekap pdf', 'pdf rekap', 
+        'rekap keuangan', 'laporan keuangan', 'export pdf', 'pdf report', 
+        'download laporan', 'unduh laporan', 'rekap bulanan', 'rekap harian',
+        'pdf rekapitulasi', 'cetak rekap', 'download pdf', 'cetak pdf', 'buat pdf',
+        'rekap minggu', 'rekap tahun', 'rekap'
+      ];
+      const matchesPdf = pdfTriggers.some(trigger => cleanText.includes(trigger)) || 
+                          (cleanText.includes('pdf') && cleanText.includes('unduh')) || 
+                          (cleanText.includes('rekap') && cleanText.includes('cetak'));
+
+      if (matchesPdf) {
+        const pdfSelectorReply: Message = {
+          id: `msg_pdf_sel_${Date.now()}`,
+          sender: 'bot',
+          text: `📄 **Laporan Keuangan PDF (FahKeu)**\n\nSaya dapat membuatkan berkas laporan PDF rekapitulasi transaksi Anda secara otomatis, rapi, dan aman.\n\nSilakan tentukan jangka waktu data transaksi yang ingin Anda masukkan ke dalam laporan PDF:`,
+          timestamp: getCurrentTime(),
+          isPdfSelector: true,
+        };
+        setMessages((prev) => [...prev, pdfSelectorReply]);
+        return;
+      }
+
+      // Parse Transaction
+      const parsed = parseTransactionText(text);
+
+      if (!parsed.success) {
+        const errorReply: Message = {
+          id: `msg_${Date.now()}`,
+          sender: 'bot',
+          text: `⚠️ Maaf, saya tidak dapat memahami format transaksi tersebut.\n\nPastikan Anda menyertakan keterangan dan nominal uang, misalnya:\n• _gaji masuk 3juta_\n• _bakso 15k_`,
+          timestamp: getCurrentTime(),
+        };
+        setMessages((prev) => [...prev, errorReply]);
+        return;
+      }
+
+      // Generate New Transaction
+      const newTransaction: Transaction = {
+        id: `tx_${Date.now()}`,
+        date: new Date().toISOString(),
+        type: parsed.type,
+        amount: parsed.amount,
+        description: parsed.description,
+        category: parsed.category,
+        source: 'web',
+      };
+
+      // Add to database
+      handleAddTransaction(newTransaction);
+
+      // Compute balance after
+      const balanceAfter = totalBalance + (parsed.type === 'pemasukan' ? parsed.amount : -parsed.amount);
+
+      // Generate Bot Success Message
+      const feedbackWord = parsed.type === 'pemasukan' ? 'uang masuk' : 'uang keluar';
+      const botReply: Message = {
+        id: `msg_${Date.now()}`,
+        sender: 'bot',
+        text: `Terima kasih, sudah tercatat! 💰\nAda ${feedbackWord} ${formatRupiah(parsed.amount)}, sisa saldo Anda sekarang menjadi ${formatRupiah(balanceAfter)}.`,
+        timestamp: getCurrentTime(),
+        parsedTransaction: {
+          type: parsed.type,
+          amount: parsed.amount,
+          description: parsed.description,
+          category: parsed.category,
+          feedback: `${feedbackWord} ${formatRupiah(parsed.amount)}`,
+          balanceAfter,
+        },
+      };
+
+      setMessages((prev) => [...prev, botReply]);
+    }, 800);
+  };
+
+  // Handles updating credentials settings
+  const handleSaveSettings = (newSettings: AppSettings) => {
+    setSettings(newSettings);
+    localStorage.setItem('catatkeu_settings', JSON.stringify(newSettings));
+  };
+
+  // Test Web App connectivity
+  const handleTestConnection = async (): Promise<boolean> => {
+    if (!settings.googleSheetUrl) return false;
+    try {
+      const res = await fetch(settings.googleSheetUrl);
+      const data = await res.json();
+      return !!data.success;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  const getTabClass = (tab: 'chat' | 'grafik' | 'pengaturan') => {
+    const isActive = activeTab === tab;
+    if (isActive) {
+      if (theme === 'luxury-gold') {
+        return 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.45)] font-black scale-105';
+      }
+      return 'bg-emerald-500 text-slate-950 font-bold';
+    }
+    return 'text-slate-300 hover:text-white hover:bg-slate-700/50';
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF5EE] text-black font-sans relative overflow-x-hidden selection:bg-[#FFD233] selection:text-black flex flex-col justify-between">
-      {/* Neobrutalist Full-Screen Loading Transition when syncing/loading from Google Spreadsheet */}
-      <LoadingScreen isLoading={isInitialLoading || isSyncing} statusText={loadingText} />
-
-      <ToastContainer toasts={toasts} onDismiss={removeToast} />
-
-      {/* Vector Geometric Doodle & Background Pattern Decorations */}
-      <VectorDecorations />
-
-      {/* Floating Playful Neo-Brutalist Badges/Stickers in Canvas */}
-      <div className="fixed top-20 left-4 hidden 2xl:flex items-center gap-2 pointer-events-none select-none z-0">
-        <div className="w-9 h-9 rounded-2xl bg-[#FF6584] border-2 border-black flex items-center justify-center font-black shadow-[2px_2px_0px_#000] rotate-[-6deg]">
-          <Code2 className="w-4 h-4 text-white" />
+    <div className={`flex flex-col h-screen bg-slate-100 dark:bg-slate-900 font-sans ${theme === 'luxury-gold' ? 'luxury-gold' : ''}`}>
+      
+      {/* Top Navbar */}
+      <header className={`bg-slate-900 text-white px-4 sm:px-6 py-4 flex items-center justify-between border-b shadow-sm shrink-0 ${
+        theme === 'luxury-gold' ? 'border-amber-500/20 shadow-[0_4px_20px_rgba(0,0,0,0.4)]' : 'border-slate-800'
+      }`}>
+        <div className="flex items-center space-x-2.5 min-w-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 relative ${
+            theme === 'luxury-gold'
+              ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+              : 'bg-emerald-500'
+          }`}>
+            <div className="relative w-6.5 h-6.5 flex items-center justify-center">
+              <Bot className={`w-4.5 h-4.5 absolute top-0.5 left-0.5 ${theme === 'luxury-gold' ? 'text-slate-950' : 'text-white'}`} />
+              <Coins className={`w-3.5 h-3.5 absolute -bottom-0.5 -right-0.5 ${
+                theme === 'luxury-gold' ? 'text-amber-950' : 'text-amber-300 dark:text-amber-400'
+              } drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.45)]`} />
+            </div>
+          </div>
+          <div className="truncate">
+            <h1 className="text-base font-bold tracking-tight text-white">FahKeu</h1>
+            <p className="text-[10px] text-slate-400 font-medium truncate">Pencatat Keuangan AI</p>
+          </div>
         </div>
-        <span className="nb-badge bg-[#FFD233] text-black shadow-[2px_2px_0px_#000] rotate-[3deg] text-[10px]">
-          fahnotes
-        </span>
-      </div>
 
-      <div className="fixed top-20 right-4 hidden 2xl:flex items-center gap-2 pointer-events-none select-none z-0">
-        <div className="nb-badge bg-[#2DD4BF] text-black shadow-[2px_2px_0px_#000] rotate-[-4deg] py-0.5 px-2.5 text-[10px]">
-          by: <strong>Faiz_Fahmi_ID</strong>
+        {/* Header Right Content: Sisa Saldo & Navigation */}
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Balance Display */}
+          <div className={`hidden xs:flex flex-col items-end bg-slate-800/40 px-2.5 py-1 rounded-xl border ${
+            theme === 'luxury-gold' ? 'border-amber-500/10' : 'border-slate-700/30'
+          }`}>
+            <span className="text-[8px] text-slate-400 uppercase tracking-wider font-bold">Saldo</span>
+            <span className={`text-xs font-mono font-black ${
+              theme === 'luxury-gold' ? 'text-amber-400 font-extrabold' : 'text-emerald-400'
+            }`}>
+              {formatRupiah(totalBalance)}
+            </span>
+          </div>
+
+          {/* Navigation Tab Pills */}
+          <div className={`flex p-0.5 rounded-xl border ${
+            theme === 'luxury-gold' ? 'bg-amber-950/25 border-amber-500/15' : 'bg-slate-800 border-slate-700/40'
+          }`}>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition ${getTabClass('chat')}`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Chat</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('grafik')}
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition ${getTabClass('grafik')}`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Grafik</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('pengaturan')}
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition ${getTabClass('pengaturan')}`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Pengaturan</span>
+            </button>
+          </div>
+
+          {/* Sync Button (If sheet URL set) */}
+          {settings.googleSheetUrl && settings.useCloudStorage && (
+            <button
+              onClick={syncWithGoogleSheets}
+              disabled={syncStatus === 'loading'}
+              className={`flex items-center justify-center p-2 rounded-xl transition border shrink-0 ${
+                theme === 'luxury-gold'
+                  ? 'bg-amber-950/40 hover:bg-amber-900/30 border-amber-500/20 text-amber-400 hover:text-amber-300'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+              }`}
+              title="Sinkronisasi Google Sheets"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncStatus === 'loading' && 'animate-spin'}`} />
+            </button>
+          )}
         </div>
-        <div className="w-9 h-9 rounded-2xl bg-[#818CF8] border-2 border-black flex items-center justify-center font-black text-white shadow-[2px_2px_0px_#000] rotate-[8deg]">
-          <Terminal className="w-4 h-4" />
-        </div>
-      </div>
+      </header>
 
-      {/* Top Navbar with Full-Width Navigation */}
-      <Header
-        isAdmin={isAdmin}
-        onLogout={handleLogout}
-        onOpenLogin={() => setIsLoginOpen(true)}
-        onOpenNewNote={handleStartCreateNote}
-        onOpenSheetsModal={handleOpenSheetsModal}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        categories={categories}
-        isSheetsConnected={settings.isSheetsConnected}
-        notesCount={notes.length}
-      />
-
-      {/* Main Content Area - Wide, Spacious & Open (No Constraining Giant Box) */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
+      {/* Main Single-Panel Content Layout */}
+      <div className="flex-1 flex overflow-hidden bg-slate-50 dark:bg-slate-950">
         
-        {/* VIEW 1: NOTE VIEWER */}
-        {viewMode === 'viewer' && selectedNote && (
-          <NoteViewer
-            note={selectedNote}
-            isAdmin={isAdmin}
-            onBack={handleBackToList}
-            onEdit={handleStartEditNote}
-            onDelete={handleDeleteNote}
-            onShowToast={addToast}
-            settings={settings}
-          />
-        )}
-
-        {/* VIEW 2: NOTE EDITOR */}
-        {viewMode === 'editor' && (
-          isAdmin ? (
-            <NoteEditor
-              initialNote={editingNote}
-              onSave={handleSaveNote}
-              onCancel={handleBackToList}
-              onShowToast={addToast}
-              availableCategories={editableCategories}
-              onAddNewCategory={handleAddCategory}
+        {/* Chat Interface (Centered panel for premium readability) */}
+        {activeTab === 'chat' && (
+          <div className="flex-1 max-w-4xl mx-auto w-full flex flex-col h-full bg-white dark:bg-slate-950 shadow-sm border-x border-slate-200/50 dark:border-slate-800/50">
+            <ChatInterface
+              messages={messages}
+              onSendMessage={handleUserMessage}
+              onClearChat={handleClearChat}
+              isTyping={isTyping}
+              totalBalance={totalBalance}
+              onAddTransactionDirect={handleDirectTransaction}
+              onGeneratePDFReport={handleGeneratePDFReport}
             />
-          ) : (
-            <div className="p-8 bg-white border-2 border-black rounded-2xl text-center space-y-4 max-w-md mx-auto my-12 shadow-[4px_4px_0px_#000]">
-              <div className="w-12 h-12 rounded-xl bg-[#FFE4E6] border-2 border-black flex items-center justify-center mx-auto text-black shadow-[2px_2px_0px_#000]">
-                <Lock className="w-6 h-6 text-black" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-black text-black">Akses Khusus Admin</h3>
-                <p className="text-xs font-bold text-black/70">
-                  Silakan login menggunakan akun admin terlebih dahulu untuk membuat atau mengedit catatan dan script.
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <button
-                  onClick={handleBackToList}
-                  className="nb-btn bg-white hover:bg-[#FAF5EE] text-black px-3.5 py-1.5 text-xs font-black"
-                >
-                  Kembali
-                </button>
-                <button
-                  onClick={() => setIsLoginOpen(true)}
-                  className="nb-btn bg-[#FFD233] hover:bg-[#FFE066] text-black px-4 py-1.5 text-xs font-black shadow-[2px_2px_0px_#000]"
-                >
-                  Buka Login Admin
-                </button>
-              </div>
-            </div>
-          )
-        )}
-
-        {/* VIEW 3: NOTE LIST / DASHBOARD */}
-        {viewMode === 'list' && (
-          <div className="space-y-6">
-            
-            {/* Header Title Section with Vector Deco & Counts */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b-2 border-black/10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#FFD233] border-2 border-black flex items-center justify-center shadow-[3px_3px_0px_#000] rotate-[-2deg]">
-                  <FileCode2 className="w-5 h-5 text-black stroke-[2.5]" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg sm:text-xl font-black text-black tracking-tight uppercase">
-                      {selectedCategory === 'Semua' ? 'Semua Catatan & Script' : `Kategori: ${selectedCategory}`}
-                    </h2>
-                    <span className="nb-badge bg-[#FFD233] text-black text-[10px] border-2 border-black font-black shadow-[1px_1px_0px_#000]">
-                      {filteredNotes.length} Catatan
-                    </span>
-                    {searchQuery && (
-                      <span className="nb-badge bg-[#38BDF8] text-black text-[10px] border-2 border-black font-black">
-                        Hasil: "{searchQuery}"
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs font-bold text-black/60 mt-0.5">
-                    Koleksi catatan kode, tutorial otomasi, dan script siap pakai
-                  </p>
-                </div>
-              </div>
-
-              {isAdmin && (
-                <button
-                  onClick={handleStartCreateNote}
-                  className="nb-btn nb-btn-yellow px-4 py-2 text-xs font-black gap-2 shadow-[3px_3px_0px_#000] self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                  <span>+ Tulis Catatan Baru</span>
-                </button>
-              )}
-            </div>
-
-            {/* Content Grid */}
-            {filteredNotes.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredNotes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onClick={() => handleOpenNote(note)}
-                    onEdit={() => handleStartEditNote(note)}
-                    onDelete={() => handleDeleteNote(note.id)}
-                    onShare={(targetNote) => handleShareNote(targetNote)}
-                    isAdmin={isAdmin}
-                  />
-                ))}
-              </div>
-            ) : (
-              /* Zero State Display (Clean 0 Notes) */
-              <div className="p-8 sm:p-14 rounded-3xl bg-white border-2 border-black shadow-[6px_6px_0px_#000] text-center space-y-4 max-w-lg mx-auto my-8">
-                <div className="w-16 h-16 rounded-2xl bg-[#FFD233] border-2 border-black flex items-center justify-center mx-auto shadow-[3px_3px_0px_#000] rotate-3">
-                  <FolderPlus className="w-8 h-8 text-black stroke-[2.5]" />
-                </div>
-
-                <div className="space-y-1.5">
-                  <h3 className="text-lg font-black text-black">
-                    {searchQuery 
-                      ? `Tidak ditemukan catatan "${searchQuery}"` 
-                      : isAdmin 
-                        ? 'Belum Ada Catatan Tersimpan (0 Data)' 
-                        : 'Belum Ada Catatan Publik'}
-                  </h3>
-                  <p className="text-xs font-bold text-black/70 max-w-sm mx-auto">
-                    {searchQuery 
-                      ? 'Coba kata kunci pencarian lain atau pilih kategori Semua.' 
-                      : isAdmin
-                        ? 'Mulai buat catatan teknis baru atau tarik catatan yang sudah tersimpan di Google Spreadsheet.'
-                        : 'Catatan dan script kode sedang dipersiapkan oleh Faiz_Fahmi_ID. Silakan kembali lagi nanti.'}
-                  </p>
-                </div>
-
-                {isAdmin ? (
-                  <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                    <button
-                      onClick={handleStartCreateNote}
-                      className="nb-btn nb-btn-yellow px-4 py-2 text-xs font-black gap-2 shadow-[2px_2px_0px_#000]"
-                    >
-                      <Plus className="w-4 h-4 stroke-[3]" />
-                      <span>+ Buat Catatan Pertama</span>
-                    </button>
-
-                    <button
-                      onClick={() => setIsSheetsModalOpen(true)}
-                      className="nb-btn bg-[#2DD4BF] hover:bg-[#5EEAD4] text-black px-4 py-2 text-xs font-black gap-2 shadow-[2px_2px_0px_#000]"
-                    >
-                      <Database className="w-4 h-4" />
-                      <span>Setup Google Sheets</span>
-                    </button>
-                  </div>
-                ) : (
-                  searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="nb-btn bg-[#FFD233] text-black px-4 py-1.5 text-xs font-black shadow-[2px_2px_0px_#000]"
-                    >
-                      Reset Pencarian
-                    </button>
-                  )
-                )}
-              </div>
-            )}
-
           </div>
         )}
 
-      </main>
+        {/* Dashboard/Grafik */}
+        {activeTab === 'grafik' && (
+          <div className="flex-1 flex flex-col h-full min-w-0">
+            <Dashboard
+              transactions={transactions}
+              onDeleteTransaction={handleDeleteTransaction}
+              onDeleteMultipleTransactions={handleDeleteMultipleTransactions}
+              onClearTransactions={handleClearTransactions}
+            />
+          </div>
+        )}
 
-      {/* Footer Full Width */}
-      <Footer
-        totalNotes={notes.length}
-        totalCodeSnippets={totalCodeSnippets}
-        isSheetsConnected={settings.isSheetsConnected}
-        isAdmin={isAdmin}
-        onOpenLogin={() => setIsLoginOpen(true)}
-        onOpenSheetsModal={() => setIsSheetsModalOpen(true)}
-      />
+        {/* SettingsPanel */}
+        {activeTab === 'pengaturan' && (
+          <div className="flex-1 flex flex-col h-full min-w-0 overflow-y-auto">
+            <SettingsPanel
+              settings={settings}
+              onSaveSettings={handleSaveSettings}
+              onTestConnection={handleTestConnection}
+              theme={theme}
+              onChangeTheme={setTheme}
+            />
+          </div>
+        )}
 
-      {/* Admin Login Modal */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onLogin={handleLogin}
-        onShowToast={addToast}
-      />
-
-      {/* Google Sheets Database Configuration Modal (Admin Only) */}
-      {isAdmin && (
-        <GoogleSheetsModal
-          isOpen={isSheetsModalOpen}
-          onClose={() => setIsSheetsModalOpen(false)}
-          webAppUrl={settings.googleSheetsWebAppUrl}
-          onSaveUrl={handleSaveSheetsUrl}
-          onSyncAll={handleSyncAllToSheets}
-          onPullData={handlePullFromSheets}
-          onTestConnection={handleTestConnection}
-          onClearLocalNotes={handleClearAllNotes}
-          isSyncing={isSyncing}
-          isSheetsConnected={settings.isSheetsConnected}
-          notesCount={notes.length}
-          categories={editableCategories}
-          notes={notes}
-          onAddCategory={handleAddCategory}
-          onEditCategory={handleEditCategory}
-          onDeleteCategory={handleDeleteCategory}
-          onSyncCategoriesToSheets={handleSyncCategoriesToSheets}
-          settings={settings}
-          onUpdateAdminCredentials={handleUpdateAdminCredentials}
-          onUpdateSettings={handleUpdateSettings}
-          initialTab={sheetsModalTab}
-        />
-      )}
-
-      {/* Interactive Per-Device Share Dataset Modal (Home / Cards) */}
-      {shareModalNote && (
-        <ShareModal
-          note={shareModalNote}
-          isOpen={Boolean(shareModalNote)}
-          onClose={() => setShareModalNote(null)}
-          onShowToast={addToast}
-        />
-      )}
-
+      </div>
     </div>
   );
 }

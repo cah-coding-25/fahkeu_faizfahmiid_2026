@@ -3,18 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>fahnotes - Catatan &amp; Code Snippet by Faiz_Fahmi_ID</title>
-    <meta name="description" content="Aplikasi catatan dan code snippet ala Notion &amp; Google Colab dengan database Google Sheets, by: Faiz_Fahmi_ID." />
-    <meta property="og:title" content="fahnotes - by: Faiz_Fahmi_ID" />
-    <meta property="og:description" content="Koleksi catatan konten dan script kode (.bat, html, python) ala Notion & Google Colab." />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#10b981" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="FahKeu" />
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/192/robot.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>FahKeu - Pencatat Keuangan AI</title>
   </head>
-  <body class="bg-[#FAF5EE] text-black">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => console.log('Service Worker terdaftar dengan sukses:', reg.scope))
+            .catch((err) => console.warn('Pendaftaran Service Worker gagal:', err));
+        });
+      }
+    </script>
   </body>
 </html>
+

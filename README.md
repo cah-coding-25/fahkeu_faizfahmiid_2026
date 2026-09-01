@@ -1,625 +1,481 @@
-# 📄 PRODUCT REQUIREMENT DOCUMENT (PRD) & BLUEPRINT ARSITEKTUR
-# ⚡ fahnotes — Modern Developer Knowledge Base, Code Repository & Cloud Script Hub
-> **Status Dokumen:** Production-Ready Specification (Super Lengkap)  
-> **Versi Dokumen:** v2.5.0  
-> **Pencipta & Pengelola Proyek:** **`by: Faiz_Fahmi_ID`**  
-> **Lisensi & Hak Cipta:** Private / Open Blueprint by Faiz_Fahmi_ID  
+# FahKeu 🪙 — Product Requirement Document (PRD) & Blueprint Spesifikasi Lengkap
+
+> **Dokumen Spesifikasi Teknis & Kebutuhan Produk (PRD) Komprehensif**  
+> *Panduan referensi 100% lengkap untuk merekonstruksi, mengembangkan, dan memelihara aplikasi **FahKeu** secara identik dari nol.*
 
 ---
 
-## 📑 DAFTAR ISI
+## 📑 Daftar Isi
 1. [Ringkasan Eksekutif & Visi Produk](#1-ringkasan-eksekutif--visi-produk)
-2. [Persona Pengguna & Use Cases](#2-persona-pengguna--use-cases)
-3. [Arsitektur Sistem & Tech Stack Lengkap](#3-arsitektur-sistem--tech-stack-lengkap)
-4. [Spesifikasi Fitur Fungsional & Logika Bisnis](#4-spesifikasi-fitur-fungsional--logika-bisnis)
-   * 4.1. Editor Blok Modular (Notion + Colab Hybrid)
-   * 4.2. Terminal Code Block & Direct Script Execution (.bat, .sh, .py, dll.)
-   * 4.3. Multi-Layer Cloud Persistence & Google Sheets Serverless Database
-   * 4.4. Disguised Admin Security & Secret Authentication
-   * 4.5. Instant Search Engine & Category Taxonomy
-   * 4.6. Universal 1-Click Auto-Connect Magic Link
-5. [Skema Basis Data & Spesifikasi API (Google Apps Script Code.gs)](#5-skema-basis-data--spesifikasi-api-google-apps-script-codegs)
-6. [Struktur Direktori & Blueprint File Source Code](#6-struktur-direktori--blueprint-file-source-code)
-7. [Panduan Langkah Demi Langkah Kloning & Deployment (Step-by-Step Cloning Guide)](#7-panduan-langkah-demi-langkah-kloning--deployment-step-by-step-cloning-guide)
-   * 7.1. Persiapan Repositori & Instalasi Lokal
-   * 7.2. Setup Google Spreadsheet & Deployment Google Apps Script
-   * 7.3. Deploy ke Vercel / Netlify / VPS
-8. [Desain Sistem UI/UX: Neo-Brutalism Canvas Guidelines](#8-desain-sistem-uiux-neo-brutalism-canvas-guidelines)
-9. [Matriks Keamanan & Kebijakan Data](#9-matriks-keamanan--kebijakan-data)
-10. [Rencana Pemeliharaan & Roadmap Masa Depan](#10-rencana-pemeliharaan--roadmap-masa-depan)
+2. [Persona Pengguna & Skenario Penggunaan](#2-persona-pengguna--skenario-penggunaan)
+3. [Arsitektur Sistem & Alur Data](#3-arsitektur-sistem--alur-data)
+4. [Struktur Data & Skema TypeScript](#4-struktur-data--skema-typescript)
+5. [Spesifikasi Fitur Utama (Deep Dive)](#5-spesifikasi-fitur-utama-deep-dive)
+   - [5.1 Antarmuka Chat & Local NLP Parser](#51-antarmuka-chat--local-nlp-parser)
+   - [5.2 Pemindai Kamera Langsung (In-Memory MediaDevices)](#52-pemindai-kamera-langsung-in-memory-mediadevices)
+   - [5.3 Mesin Offline OCR (Tesseract.js) & Heuristik Struk](#53-mesin-offline-ocr-tesseractjs--heuristik-struk)
+   - [5.4 Dasbor Analisis Keuangan & Visualisasi Interaktif](#54-dasbor-analisis-keuangan--visualisasi-interaktif)
+   - [5.5 Generator Laporan PDF Profesional (jsPDF Vector Engine)](#55-generator-laporan-pdf-profesional-jspdf-vector-engine)
+   - [5.6 Integrasi Google Sheets & Backend Google Apps Script](#56-integrasi-google-sheets--backend-google-apps-script)
+   - [5.7 Integrasi Asisten Bot Telegram](#57-integrasi-asisten-bot-telegram)
+   - [5.8 Fitur Unduh Aplikasi (Android & Desktop via Google Drive)](#58-fitur-unduh-aplikasi-android--desktop-via-google-drive)
+6. [Spesifikasi Desain & Antarmuka Pengguna (UI/UX)](#6-spesifikasi-desain--antarmuka-pengguna-uiux)
+7. [Panduan Rekonstruksi Langkah-demi-Langkah (Build 100% Identik)](#7-panduan-rekonstruksi-langkah-demi-langkah-build-100-identik)
+8. [Matriks Penanganan Error & Kasus Tepi (Edge Cases)](#8-matriks-penanganan-error--kasus-tepi-edge-cases)
+9. [Panduan Deployment & Konfigurasi Lingkungan](#9-panduan-deployment--konfigurasi-lingkungan)
+10. [Panduan Pengaturan Tautan Google Drive & Modifikasi di GitHub](#10-panduan-pengaturan-tautan-google-drive--modifikasi-di-github)
+    - [10.1 Cara Memasukkan Link Google Drive Sendiri (Android & Desktop)](#101-cara-memasukkan-link-google-drive-sendiri-android--desktop)
+    - [10.2 Cara Menghapus Kartu Unduh Jika Tidak Diinginkan di Website](#102-cara-menghapus-kartu-unduh-jika-tidak-diinginkan-di-website)
 
 ---
 
-## 1. 🌟 RINGKASAN EKSEKUTIF & VISI PRODUK
+## 1. Ringkasan Eksekutif & Visi Produk
 
-**fahnotes** adalah platform web basis pengetahuan (*developer knowledge base*) dan repositori skrip multi-bahasa yang memadukan fleksibilitas dokumen berbasis blok ala **Notion** dengan kemampuan eksekusi kode terisolasi bergaya **Google Colab**, dibungkus dalam bahasa visual **Neo-Brutalism** kontemporer (garis tegas `#000000`, palet kontras tinggi, bayangan offset tajam, dan kanvas *full-width* terbuka tanpa kotak sempit).
+### 1.1 Latar Belakang & Masalah
+Sebagian besar aplikasi pencatat keuangan konvensional mengharuskan pengguna mengisi formulir multi-langkah yang rumit (memilih tanggal, memilih dropdown kategori yang panjang, mengisi kolom jumlah, dan mengetik keterangan). Gesekan (*friction*) ini menyebabkan pengguna malas mencatat pengeluaran harian mereka. Selain itu, banyak aplikasi bergantung pada API AI berbayar atau server pihak ketiga yang mengorbankan privasi data finansial pengguna.
 
-### Masalah yang Diselesaikan (*Problem Statement*):
-1. **Biaya & Kompleksitas Database Tradisional**: Developer mandiri sering kali membutuhkan media penyimpanan catatan cloud yang tersinkronisasi antar-perangkat namun terbebani biaya langganan database serverless (SQL/NoSQL) atau kerumitan setup koneksi.
-2. **Keterbatasan Format Catatan Biasa**: Catatan teknis membutuhkan blok skrip nyata yang dapat diunduh langsung menjadi file ekstensi (`.bat`, `.sh`, `.py`, `.js`, `.json`, dll.) dan disalin 1-klik tanpa distorsi indentasi.
-3. **Kemudahan Akses Lintas Perangkat**: Menghilangkan keharusan konfigurasi manual berulang kali di setiap perangkat/browser baru saat aplikasi dideploy ke layanan hosting statis seperti Vercel atau GitHub Pages.
+### 1.2 Solusi FahKeu
+**FahKeu** menghadirkan pengalaman pencatatan keuangan berkecepatan tinggi melalui antarmuka percakapan interaktif (*Chat UI*) bergaya aplikasi pesan instan (WhatsApp/Telegram/Instagram). FahKeu memproses bahasa alami Bahasa Indonesia secara instan langsung di peramban (*client-side NLP*) tanpa biaya API, memungkinkan pemindaian struk berbasis kamera in-memory tanpa membebani penyimpanan perangkat, serta menyediakan analitik visual, ekspor PDF kustom, dan sinkronisasi opsional ke Google Sheets & Bot Telegram.
 
-### Nilai Utama (*Core Value Proposition*):
-* **$0 Cloud Hosting & Zero-Cost Database**: Menggunakan Google Sheets + Google Apps Script Web App sebagai backend REST API *serverless* gratis selamanya dengan kapasitas ribuan baris data.
-* **Universal 1-Input Setup**: Cukup memasukkan Web App URL di antarmuka web sekali, atau menggunakan *Magic Link Auto-Connect*, seluruh perangkat langsung tersinkronisasi permanen.
-* **Disguised Admin Security**: Pengunjung publik hanya memiliki hak baca (*read-only*), sedangkan menu penulisan, pengeditan, penghapusan, dan konfigurasi terkunci di balik login tersembunyi di footer (`by: Faiz_Fahmi_ID`).
-
----
-
-## 2. 👥 PERSONA PENGGUNA & USE CASES
-
-### 2.1. Persona Utama: Administrator (Faiz_Fahmi_ID)
-* **Kebutuhan**: Menyimpan koleksi skrip otomatisasi Windows Batch (`.bat`), Linux Bash (`.sh`), Python bot (`.py`), boilerplate web (`.html`/`.js`), dokumentasi API, dan tutorial konfigurasi server.
-* **Tindakan**: Membuat, mengedit, memindahkan posisi blok, menandai catatan penting (*pin*), mengelola kategori, mengupdate kredensial, dan menyinkronkan data ke Google Sheets.
-
-### 2.2. Persona Pengunjung / Publik: Developer, Siswa, & Rekan Kerja
-* **Kebutuhan**: Mencari tutorial atau skrip siap pakai secepat mungkin tanpa proses registrasi akun yang rumit.
-* **Tindakan**: Melakukan pencarian instan kata kunci (*real-time multi-field search*), menyaring berdasarkan kategori, membaca dokumentasi markdown, menyalin sintaks skrip (*Copy Code*), dan mengunduh skrip langsung menjadi file `.bat` / `.py` / `.sh` ke laptop/HP mereka.
+### 1.3 Prinsip Utama Desain Sistem
+1. **Zero-Cost & Privacy-First:** 100% fungsi inti (NLP parser, OCR, kalkulasi analitik, dan generator PDF) berjalan sepenuhnya di peramban klien tanpa wajib langganan backend atau API AI berbayar.
+2. **Kamera In-Memory (Storage-Saving):** Pemotretan struk diproses di memori RAM dan langsung diubah menjadi transaksi tanpa disimpan di galeri file ponsel.
+3. **Dual-Platform Access:** Sinkronisasi dua arah (*two-way sync*) ke Google Sheets dan Bot Telegram pribadi pengguna.
+4. **Resilience (Offline-First):** Tetap berfungsi optimal saat jaringan internet terputus menggunakan `localStorage` dan antrean aksi offline (*offline action queue*).
 
 ---
 
-## 3. 🛠️ ARSITEKTUR SISTEM & TECH STACK LENGKAP
+## 2. Persona Pengguna & Skenario Penggunaan
+
+| Persona | Kebutuhan Utama | Fitur FahKeu yang Digunakan |
+|---|---|---|
+| **Mahasiswa / Freelancer** | Mencatat jajan harian, bensin, dan uang makan secara cepat tanpa repot membuka formulir. | Chat NLP (*"bakso 15k"*, *"kopi 20rb"*), Suggestion Chips, Ringkasan Saldo Cepat. |
+| **Ibu Rumah Tangga / Pengelola Belanja** | Merekam tumpukan struk belanja bulanan dari supermarket/minimarket. | In-App Camera OCR Scanner, Auto Categorization, Rekap Bulanan PDF. |
+| **Pengguna Telegram Aktif** | Mencatat transaksi saat bepergian langsung dari aplikasi Telegram tanpa membuka browser. | Integrasi Bot Telegram via Webhook Google Apps Script. |
+| **Pecinta Spreadsheet** | Ingin data keuangannya tersimpan rapi di Google Sheets untuk backup dan analisis lanjutan. | Google Sheets Cloud Sync & Ekspor PDF Otomatis. |
+
+---
+
+## 3. Arsitektur Sistem & Alur Data
 
 ```
-                                    +-----------------------------------------+
-                                    |         BROWSER CLIENT (REACT 19)       |
-                                    | - Block-Based Editor (Notion/Colab)     |
-                                    | - Instant Multi-Field Search (0ms)      |
-                                    | - Neo-Brutalist Responsive Layout       |
-                                    +--------------------+--------------------+
-                                                         |
-                              +--------------------------+--------------------------+
-                              |                                                     |
-                              v                                                     v
-               +------------------------------+                      +------------------------------+
-               |    LOCAL & BROWSER VAULT     |                      |     SERVER / SERVERLESS API  |
-               | - Multi-Layer XOR Encryption |                      | - /api/global-config (Vercel)|
-               | - LocalStorage Fallback      |                      | - Express Server.ts (Proxy)  |
-               | - Magic Link Hash Absorber   |                      | - Cloud Sync Relay Broadcast |
-               +--------------+---------------+                      +--------------+---------------+
-                              |                                                     |
-                              +--------------------------+--------------------------+
-                                                         |
-                                                         v
-                                    +-----------------------------------------+
-                                    |      GOOGLE APPS SCRIPT WEB APP API     |
-                                    |       (Code.gs via doGet & doPost)      |
-                                    +--------------------+--------------------+
-                                                         |
-                                                         v
-                                    +-----------------------------------------+
-                                    |        GOOGLE SPREADSHEET CLOUD         |
-                                    |  Sheet1: fahnotes_db (Data Catatan)     |
-                                    |  Sheet2: fahnotes_settings (Config/Auth)|
-                                    +-----------------------------------------+
+               ┌────────────────────────────────────────────────────────┐
+               │                     KLIEN / BROWSER                    │
+               │  (React 19 + TypeScript + Vite + Tailwind CSS + PWA)  │
+               └───────────┬────────────────────────────────┬───────────┘
+                           │                                │
+            ┌──────────────┴──────────────┐  ┌──────────────┴──────────────┐
+            ▼                             ▼  ▼                             ▼
+   ┌─────────────────┐           ┌─────────────────┐              ┌─────────────────┐
+   │ Local NLP Parser│           │ Tesseract.js    │              │ jsPDF Generator │
+   │ (Regex + Suffix)│           │ (In-Memory OCR) │              │ (Vector Engine) │
+   └────────┬────────┘           └────────┬────────┘              └────────┬────────┘
+            │                             │                                │
+            └──────────────┬──────────────┘                                │
+                           ▼                                               │
+             ┌───────────────────────────┐                                 │
+             │   State & LocalStorage    │◄────────────────────────────────┘
+             │ (Transactions & Messages) │
+             └─────────────┬─────────────┘
+                           │ (Jika Cloud Storage Aktif)
+                           ▼
+          ┌───────────────────────────────────┐
+          │     Google Apps Script Webhook    │
+          │             (Code.gs)             │
+          └─────────┬───────────────┬─────────┘
+                    │               │
+                    ▼               ▼
+          ┌───────────────────┐   ┌──────────────────────────┐
+          │   Google Sheets   │   │ Telegram Bot API Webhook │
+          │ (Database Utama)  │   │  (Catat via Telegram)    │
+          └───────────────────┘   └──────────────────────────┘
 ```
 
-### 3.1. Spesifikasi Dependensi & Library (Production)
-| Kategori | Paket / Tool | Versi | Peran Teknis & Alasan Pemilihan |
-| :--- | :--- | :--- | :--- |
-| **UI Framework** | `react` | `^19.0.1` | Core rendering engine berbasis komponen modern & hooks state. |
-| **DOM Renderer** | `react-dom` | `^19.0.1` | Binding React ke browser Document Object Model. |
-| **Language** | `typescript` | `~5.8.2` | Static type checking ketat untuk keamanan model data multi-blok. |
-| **Build Tool** | `vite` | `^6.2.3` | Bundler super cepat dengan HMR dan plugin Tailwind v4. |
-| **CSS Engine** | `tailwindcss` | `^4.1.14` | Styling utility-first untuk desain Neo-Brutalism tanpa file CSS berat. |
-| **Tailwind Vite** | `@tailwindcss/vite` | `^4.1.14` | Integrasi resmi Vite plugin untuk Tailwind CSS v4. |
-| **Icon Pack** | `lucide-react` | `^0.546.0` | 1000+ ikon SVG clean & konsisten dengan ketebalan stroke kustom. |
-| **Animasi** | `motion` | `^12.23.24` | Transisi layout modal, expand-collapse kartu, dan interaksi gesture. |
-| **Celebration FX** | `canvas-confetti` | `^1.9.4` | Efek konfeti partikel interaktif saat sukses menyimpan catatan/skrip. |
-| **Markdown** | `react-markdown` | `^10.1.0` | Renderer format Markdown (# heading, bold, list, quote) pada blok teks. |
-| **Backend Proxy** | `express` | `^4.21.2` | Server HTTP Node.js untuk proxy API lokal & endpoint `/api/*`. |
-| **Dev Server Runtime** | `tsx` | `^4.21.0` | Eksekutor file `server.ts` langsung tanpa manual build saat development. |
-| **Bundler Server** | `esbuild` | `^0.25.0` | Mengompilasi `server.ts` menjadi single self-contained `dist/server.cjs`. |
-| **Env Manager** | `dotenv` | `^17.2.3` | Membaca variabel lingkungan `.env` / `.env.example`. |
-
 ---
 
-## 4. ⚙️ SPESIFIKASI FITUR FUNGSIONAL & LOGIKA BISNIS
+## 4. Struktur Data & Skema TypeScript
 
-### 4.1. Editor Blok Modular (Notion + Colab Hybrid)
-* **Model Blok Data (`NoteBlock`)**:
-  Setiap catatan terdiri dari array blok independen dengan struktur:
-  ```typescript
-  export type BlockType = 'markdown' | 'code' | 'link' | 'image';
-  export interface NoteBlock {
-    id: string;
-    type: BlockType;
-    content: string;            // Teks markdown, isi kode skrip, atau URL link
-    language?: string;          // bat, sh, py, js, html, css, json, dll.
-    filename?: string;          // contoh: "backup_database.bat"
-    showLineNumbers?: boolean;  // toggle penomoran baris pada terminal
-    metadata?: {
-      title?: string;           // judul untuk link bookmark
-      url?: string;             // target URL bookmark
-      caption?: string;         // keterangan gambar
-    };
-  }
-  ```
-* **Operasi Blok**:
-  * Menambah blok baru di posisi bawah (`+ Markdown`, `+ Blok Kode`, `+ Link Tautan`).
-  * Memindahkan urutan blok ke atas / ke bawah (*Reorder Up/Down*).
-  * Menghapus blok individual dengan konfirmasi visual.
-  * Preview langsung Markdown rendered secara real-time.
+Semua tipe data global didefinisikan secara modular di `/src/types.ts`:
 
-### 4.2. Terminal Code Block & Direct Script Execution
-* **Visual Styling**: Mengusung tema *Deep Dark Console* (`#0A0A0A` / `#000000`) dengan border tebal 2px, dot window decoration (merah, kuning, hijau), dan font monospace tajam (`Consolas`, `Fira Code`, `JetBrains Mono`).
-* **Fitur Aksi Kode**:
-  1. **Salin Kode 1-Klik (*Copy to Clipboard*)**: Menyalin seluruh isi skrip tanpa merusak spasi atau line break, disertai toast notifikasi sukses.
-  2. **Unduh File Skrip (*Direct Download*)**: Menghasilkan file blob langsung dengan MIME type yang tepat sesuai nama file pada blok (misal: `setup.bat` langsung terunduh sebagai file batch nyata di OS Windows/Linux pengguna).
-  3. **Line Numbers Toggle**: Opsi menampilkan atau menyembunyikan nomor baris di sisi kiri editor kode.
-
-### 4.3. Multi-Layer Cloud Persistence & Google Sheets Serverless Database
-Sistem menjamin data tidak akan pernah hilang dengan menggunakan hierarki 4 lapis:
-1. **Lapis 1 (Vercel Environment Variable)**: `VITE_GOOGLE_SHEETS_URL`.
-2. **Lapis 2 (File Repositori GitHub)**: `src/config/appConfig.ts` (`APP_CONFIG.GOOGLE_SHEETS_WEB_APP_URL`).
-3. **Lapis 3 (Security Browser Vault)**: Enkripsi XOR berlapis + Base64 pada `localStorage` browser.
-4. **Lapis 4 (Serverless / Server Relay)**: `/api/global-config` (Vercel Serverless Function & Express `data/global-config.json`).
-
-### 4.4. Disguised Admin Security & Secret Authentication
-* **Trigger Login Terselubung**: Tidak ada tombol login mencolok di navigasi utama. Tombol login disamarkan secara cerdas pada teks atribusi footer: **`by: Faiz_Fahmi_ID`**.
-* **Kredensial Bawaan**:
-  * **Username**: `Faiz_Fahmi_ID`
-  * **Password**: `admin123`
-* **Manajemen Akun Admin**: Admin dapat mengganti username dan password kapan saja langsung dari tab Akun Admin pada modal pengaturan, yang otomatis terupdate ke Google Spreadsheet.
-* **Hak Akses Publik**: Pengunjung biasa hanya dapat membaca, mencari, menyalin, dan mengunduh. Seluruh kontrol manipulasi data (`+ Tulis Catatan`, `Edit`, `Hapus`, `Pin`, `Pengaturan DB`) di-unmount dari DOM saat sesi admin nonaktif.
-
-### 4.5. Instant Search Engine & Category Taxonomy
-* **Pencarian Multi-Field 0ms**: Memindai judul catatan, ringkasan deskripsi, tag kata kunci, nama file skrip, hingga baris kode di dalam blok secara instan.
-* **Taxonomy Kategori Dinamis**: Admin dapat menambah kategori baru, mengubah nama kategori lama (dengan pembaruan otomatis pada semua catatan terkait), atau menghapus kategori.
-* **Filter Pil Navigasi**: Pil kategori interaktif di header lengkap dengan penghitung total catatan aktif per kategori.
-
-### 4.6. Universal 1-Click Auto-Connect Magic Link
-* **Fungsi**: Membagikan link website yang secara otomatis menghubungkan browser penerima ke database Google Sheets tanpa perlu mengetikkan URL manual.
-* **Format Link**: `https://your-domain.vercel.app/#s=BASE64_ENCODED_URL`
-* **Logika Kerja**: Saat halaman dimuat, skrip mendeteksi hash `#s=`, mendekripsi URL Web App, menyimpannya ke vault lokal, dan membersihkan URL di address bar browser secara *seamless* tanpa reload.
-
----
-
-## 5. 📊 SKEMA BASIS DATA & SPESIFIKASI API (GOOGLE APPS SCRIPT CODE.GS)
-
-### 5.1. Struktur Spreadsheet Google Sheets
-Database terdiri dari 2 lembar kerja (*sheets*) yang dibuat secara otomatis:
-
-#### Sheet 1: `fahnotes_db` (Tabel Catatan)
-| Kolom | Nama Header | Tipe Data | Deskripsi / Contoh |
-| :---: | :--- | :--- | :--- |
-| **A** | `id` | String (UUID) | Unique ID catatan: `note_1740000000000` |
-| **B** | `title` | String | Judul catatan: `Script Otomatisasi Backup DB` |
-| **C** | `category` | String | Nama kategori: `BAT Script` |
-| **D** | `description` | String | Ringkasan singkat isi catatan |
-| **E** | `tags` | String (JSON Array) | `["backup", "sql", "windows"]` |
-| **F** | `blocks` | String (JSON Array) | Array serialisasi objek `NoteBlock[]` |
-| **G** | `isPinned` | Boolean (String) | `true` atau `false` |
-| **H** | `createdAt` | ISO 8601 String | `2026-08-31T20:00:00.000Z` |
-| **I** | `updatedAt` | ISO 8601 String | `2026-08-31T20:00:00.000Z` |
-
-#### Sheet 2: `fahnotes_settings` (Tabel Pengaturan & Auth)
-| Kolom | Nama Header | Tipe Data | Deskripsi / Nilai |
-| :---: | :--- | :--- | :--- |
-| **A** | `key` | String | Kunci: `adminUsername`, `adminPassword`, `categories`, `siteName` |
-| **B** | `value` | String | Nilai terenkripsi atau data konfigurasi |
-
----
-
-### 5.2. Spesifikasi Endpoint Google Apps Script (`Code.gs`)
-
-Salin dan tempelkan kode Apps Script berikut ke proyek Google Sheets Anda:
-
-```javascript
-/**
- * ⚡ fahnotes Backend Engine — Google Apps Script (Code.gs)
- * Dibuat dan dikelola oleh: Faiz_Fahmi_ID
- * Versi API: 2.5.0
- */
-
-const SHEET_NOTES = 'fahnotes_db';
-const SHEET_SETTINGS = 'fahnotes_settings';
-
-function doGet(e) {
-  const output = ContentService.createTextOutput();
-  output.setMimeType(ContentService.MimeType.JSON);
-  
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    initSheetsIfNeeded(ss);
-    
-    const action = (e && e.parameter && e.parameter.action) || 'getAll';
-    
-    if (action === 'ping') {
-      return output.setContent(JSON.stringify({
-        success: true,
-        message: 'fahnotes Google Sheets API Connected!',
-        timestamp: new Date().toISOString(),
-        author: 'Faiz_Fahmi_ID'
-      }));
-    }
-    
-    if (action === 'getAll') {
-      const notes = readAllNotes(ss);
-      const settings = readAllSettings(ss);
-      return output.setContent(JSON.stringify({
-        success: true,
-        notes: notes,
-        settings: settings,
-        totalNotes: notes.length
-      }));
-    }
-    
-    return output.setContent(JSON.stringify({ success: false, error: 'Action not recognized' }));
-  } catch (err) {
-    return output.setContent(JSON.stringify({ success: false, error: err.toString() }));
-  }
+```typescript
+// 1. Skema Transaksi Finansial
+export interface Transaction {
+  id: string;                      // Format: 'tx_' + timestamp + '_' + randomString
+  date: string;                    // ISO 8601 String (e.g. '2026-06-28T14:20:00.000Z')
+  type: 'pemasukan' | 'pengeluaran';
+  amount: number;                  // Integer positif (e.g. 150000)
+  description: string;             // Nama transaksi (e.g. 'Beli Bakso Urat')
+  category: string;                // Kategori resmi (e.g. 'Makanan & Minuman')
+  source: 'web' | 'telegram';      // Asal pencatatan transaksi
 }
 
-function doPost(e) {
-  const output = ContentService.createTextOutput();
-  output.setMimeType(ContentService.MimeType.JSON);
-  
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    initSheetsIfNeeded(ss);
-    
-    if (!e.postData || !e.postData.contents) {
-      return output.setContent(JSON.stringify({ success: false, error: 'Empty payload' }));
-    }
-    
-    const payload = JSON.parse(e.postData.contents);
-    const action = payload.action;
-    
-    if (action === 'saveAllNotes') {
-      writeAllNotes(ss, payload.notes || []);
-      return output.setContent(JSON.stringify({ success: true, count: (payload.notes || []).length }));
-    }
-    
-    if (action === 'saveSingleNote') {
-      upsertSingleNote(ss, payload.note);
-      return output.setContent(JSON.stringify({ success: true, noteId: payload.note.id }));
-    }
-    
-    if (action === 'deleteNote') {
-      deleteSingleNote(ss, payload.noteId);
-      return output.setContent(JSON.stringify({ success: true, deletedId: payload.noteId }));
-    }
-    
-    if (action === 'updateSettings') {
-      saveSettings(ss, payload.settings || {});
-      return output.setContent(JSON.stringify({ success: true, settings: payload.settings }));
-    }
-    
-    return output.setContent(JSON.stringify({ success: false, error: 'Unknown action: ' + action }));
-  } catch (err) {
-    return output.setContent(JSON.stringify({ success: false, error: err.toString() }));
-  }
+// 2. Skema Pesan Chat Interaktif
+export interface Message {
+  id: string;                      // Format: 'msg_' + timestamp
+  sender: 'user' | 'bot';
+  text: string;                    // Teks konten pesan (dukung format Markdown sederhana)
+  timestamp: string;               // Jam:Menit (e.g. '14:25')
+  parsedTransaction?: {            // Metadata transaksi jika pesan memicu pencatatan
+    type: 'pemasukan' | 'pengeluaran';
+    amount: number;
+    description: string;
+    category: string;
+    feedback: string;
+    balanceAfter: number;
+  };
+  isPdfSelector?: boolean;         // Menampilkan selector unduh PDF langsung di chat
+  pdfDownloadUrl?: string;
+  pdfPeriod?: string;
 }
 
-function initSheetsIfNeeded(ss) {
-  let noteSheet = ss.getSheetByName(SHEET_NOTES);
-  if (!noteSheet) {
-    noteSheet = ss.insertSheet(SHEET_NOTES);
-    noteSheet.appendRow(['id', 'title', 'category', 'description', 'tags', 'blocks', 'isPinned', 'createdAt', 'updatedAt']);
-    noteSheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#2DD4BF');
-    noteSheet.setFrozenRows(1);
-  }
-  
-  let setSheet = ss.getSheetByName(SHEET_SETTINGS);
-  if (!setSheet) {
-    setSheet = ss.insertSheet(SHEET_SETTINGS);
-    setSheet.appendRow(['key', 'value']);
-    setSheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#FFD166');
-    setSheet.setFrozenRows(1);
-    
-    setSheet.appendRow(['adminUsername', 'Faiz_Fahmi_ID']);
-    setSheet.appendRow(['adminPassword', 'admin123']);
-    setSheet.appendRow(['siteName', 'fahnotes']);
-    setSheet.appendRow(['authorName', 'Faiz_Fahmi_ID']);
-    setSheet.appendRow(['categories', JSON.stringify(['BAT Script', 'HTML / Web', 'Python', 'JavaScript', 'Otomasi', 'Tutorial', 'Linux / Shell', 'File Drive'])]);
-  }
+// 3. Konfigurasi Pengaturan & Sinkronisasi
+export interface AppSettings {
+  googleSheetUrl: string;          // Google Apps Script Web App Deployment URL
+  telegramBotToken: string;        // Token HTTP BotFather Telegram
+  telegramChatId: string;          // ID Obrolan / User ID Telegram Pengguna
+  useCloudStorage: boolean;        // Saklar aktivasi sinkronisasi cloud
 }
 
-function readAllNotes(ss) {
-  const sheet = ss.getSheetByName(SHEET_NOTES);
-  if (!sheet) return [];
-  const rows = sheet.getDataRange().getValues();
-  if (rows.length <= 1) return [];
-  
-  const notes = [];
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    if (!r[0]) continue;
-    
-    let tags = [];
-    let blocks = [];
-    try { tags = typeof r[4] === 'string' ? JSON.parse(r[4]) : (r[4] || []); } catch(e) { tags = []; }
-    try { blocks = typeof r[5] === 'string' ? JSON.parse(r[5]) : (r[5] || []); } catch(e) { blocks = []; }
-    
-    notes.push({
-      id: String(r[0]),
-      title: String(r[1] || ''),
-      category: String(r[2] || 'Umum'),
-      description: String(r[3] || ''),
-      tags: Array.isArray(tags) ? tags : [],
-      blocks: Array.isArray(blocks) ? blocks : [],
-      isPinned: String(r[6]).toLowerCase() === 'true',
-      createdAt: r[7] ? String(r[7]) : new Date().toISOString(),
-      updatedAt: r[8] ? String(r[8]) : new Date().toISOString()
-    });
-  }
-  return notes;
+// 4. Antrean Aksi Offline (Queue)
+export interface OfflineAction {
+  id: string;
+  action: 'add' | 'delete' | 'clear';
+  transaction?: Transaction;
+  transactionId?: string;
 }
 
-function writeAllNotes(ss, notes) {
-  const sheet = ss.getSheetByName(SHEET_NOTES);
-  if (!sheet) return;
-  
-  sheet.clearContents();
-  sheet.appendRow(['id', 'title', 'category', 'description', 'tags', 'blocks', 'isPinned', 'createdAt', 'updatedAt']);
-  sheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#2DD4BF');
-  sheet.setFrozenRows(1);
-  
-  if (!notes || notes.length === 0) return;
-  
-  const dataRows = notes.map(n => [
-    n.id,
-    n.title || '',
-    n.category || 'Umum',
-    n.description || '',
-    JSON.stringify(n.tags || []),
-    JSON.stringify(n.blocks || []),
-    Boolean(n.isPinned),
-    n.createdAt || new Date().toISOString(),
-    n.updatedAt || new Date().toISOString()
-  ]);
-  
-  sheet.getRange(2, 1, dataRows.length, 9).setValues(dataRows);
-}
-
-function upsertSingleNote(ss, note) {
-  const sheet = ss.getSheetByName(SHEET_NOTES);
-  if (!sheet || !note || !note.id) return;
-  
-  const rows = sheet.getDataRange().getValues();
-  let targetRowIndex = -1;
-  
-  for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]) === String(note.id)) {
-      targetRowIndex = i + 1;
-      break;
-    }
-  }
-  
-  const rowData = [
-    note.id,
-    note.title || '',
-    note.category || 'Umum',
-    note.description || '',
-    JSON.stringify(note.tags || []),
-    JSON.stringify(note.blocks || []),
-    Boolean(note.isPinned),
-    note.createdAt || new Date().toISOString(),
-    new Date().toISOString()
-  ];
-  
-  if (targetRowIndex > 0) {
-    sheet.getRange(targetRowIndex, 1, 1, 9).setValues([rowData]);
-  } else {
-    sheet.appendRow(rowData);
-  }
-}
-
-function deleteSingleNote(ss, noteId) {
-  const sheet = ss.getSheetByName(SHEET_NOTES);
-  if (!sheet || !noteId) return;
-  const rows = sheet.getDataRange().getValues();
-  for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]) === String(noteId)) {
-      sheet.deleteRow(i + 1);
-      break;
-    }
-  }
-}
-
-function readAllSettings(ss) {
-  const sheet = ss.getSheetByName(SHEET_SETTINGS);
-  if (!sheet) return {};
-  const rows = sheet.getDataRange().getValues();
-  const settings = {};
-  for (let i = 1; i < rows.length; i++) {
-    const k = rows[i][0];
-    let v = rows[i][1];
-    if (k) {
-      if (k === 'categories') {
-        try { v = JSON.parse(v); } catch(e) {}
-      }
-      settings[k] = v;
-    }
-  }
-  return settings;
-}
-
-function saveSettings(ss, newSettings) {
-  const sheet = ss.getSheetByName(SHEET_SETTINGS);
-  if (!sheet) return;
-  const rows = sheet.getDataRange().getValues();
-  
-  Object.keys(newSettings).forEach(key => {
-    let val = newSettings[key];
-    if (typeof val === 'object') val = JSON.stringify(val);
-    
-    let found = false;
-    for (let i = 1; i < rows.length; i++) {
-      if (rows[i][0] === key) {
-        sheet.getRange(i + 1, 2).setValue(val);
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      sheet.appendRow([key, val]);
-    }
-  });
+// 5. Konfigurasi Kategori & Palet Warna
+export interface CategoryConfig {
+  name: string;
+  color: string;                   // Kode warna HEX (e.g. '#10b981')
+  keywords: string[];              // Kata kunci pemicu pencocokan otomatis
+  icon: string;                    // Nama komponen icon Lucide-React
 }
 ```
 
 ---
 
-## 6. 📂 STRUKTUR DIREKTORI & BLUEPRINT FILE SOURCE CODE
+## 5. Spesifikasi Fitur Utama (Deep Dive)
 
-Berikut adalah peta struktur berkas lengkap proyek:
+### 5.1 Antarmuka Chat & Local NLP Parser
 
-```plaintext
-fahnotes/
-├── api/
-│   └── global-config.js          # Serverless function endpoint Vercel (/api/global-config)
-├── data/
-│   └── global-config.json        # File JSON sinkronisasi persisten untuk server Express
+#### Algoritma Pemrosesan Bahasa Alami (`/src/utils/parser.ts`)
+Parser mengeksekusi 4 tahapan pencocokan berurutan:
+
+1. **Deteksi Tipe Transaksi (`type`):**
+   - **Prefix Sign:** Teks berawalan `+` otomatis `pemasukan`, berawalan `-` otomatis `pengeluaran`.
+   - **Kata Kunci Pemasukan:** `gaji`, `masuk`, `terima`, `pemasukan`, `transfer`, `freelance`, `sampingan`, `bonus`, `untung`, `dapat`, `cuan`, `laba`, `plus`.
+   - **Kata Kunci Pengeluaran:** `pengeluaran`, `beli`, `bayar`, `untuk`, `makan`, `bakso`, `kopi`, `bensin`, `pulsa`, `listrik`, `belanja`, `jajan`, `ongkir`, `kos`, `tiket`, `keluar`, `minum`, `gojek`, `grab`, `shopee`, `tokopedia`, `minus`.
+   - **Resolusi Konflik:** Jika kedua tipe kata kunci ada dalam satu kalimat, posisi kata kunci pertama yang muncul menentukan tipe.
+
+2. **Ekstraksi Nominal & Akhiran Suffix:**
+   - **Regex Pattern:** `/(?:rp\.?\s*)?(\d+[\d.,]*)\s*(juta|miliar|jt|ribu|rb|k|m|r)?\b/gi`
+   - **Aturan Konversi Suffix:**
+     - `k`, `rb`, `ribu`, `r` $\rightarrow \times 1.000$
+     - `jt`, `juta`, `m` $\rightarrow \times 1.000.000$
+     - `miliar` $\rightarrow \times 1.000.000.000$
+   - **Penanganan Desimal & Pemisah Ribuan Indonesia:**
+     - Nilai ber-suffix seperti `1.5jt` atau `2,5k` diubah titik/komanya menjadi desimal numerik ($1.5 \times 1.000.000 = 1.500.000$).
+     - Nilai tanpa suffix: jika memiliki lebih dari 1 tanda titik (misal `1.000.000`) atau format ribuan standar, seluruh titik dihilangkan.
+
+3. **Pembersihan Deskripsi (`description`):**
+   - Angka nominal, simbol uang, serta kata kunci tipe transaksi dihapus dari kalimat mentah.
+   - Karakter sisa dibersihkan dari spasi ganda dan dikapitalisasi dengan rapi.
+
+4. **Klasifikasi Kategori Otomatis (`category`):**
+   - Mencocokkan kata kunci deskripsi terhadap 9 kategori standar:
+     1. *Makanan & Minuman* (makan, minum, nasi, kopi, cafe, resto, bakso, martabak, indomaret, dll.)
+     2. *Transportasi* (bensin, pertalite, pertamax, gojek, grab, tarif, parkir, kereta, busway, toll)
+     3. *Belanja & Pribadi* (baju, pakaian, sepatu, celana, skin care, shopee, lazada, tokopedia, mall)
+     4. *Tagihan & Utilitas* (listrik, pln, pdam, air, wifi, indihome, kuota, pulsa, kosan, kontrakan)
+     5. *Gaji & Pendapatan Tetap* (gaji, salary, honor, thr, upah, bulanan)
+     6. *Freelance & Sampingan* (proyek, project, freelance, client, komisi, dividen, royalti)
+     7. *Kesehatan & Medis* (obat, apotek, dokter, rumah sakit, klinik, vitamin, periksa)
+     8. *Hiburan & Liburan* (bioskop, tiket, bioskop, nonton, netflix, spotify, game, staycation)
+     9. *Lain-lain* (Kategori *fallback* default)
+
+---
+
+### 5.2 Pemindai Kamera Langsung (In-Memory MediaDevices)
+
+#### Fitur & Arsitektur
+- **In-Memory Capture:** Tidak menggunakan `<input type="file" capture>` default browser yang memaksa sistem operasi menyimpan foto ke galeri perangkat.
+- **Kamera Kustom Berbasis `navigator.mediaDevices.getUserMedia`:**
+  - Mengalirkan *live stream* video beresolusi optimal ($1280 \times 720$).
+  - Menyediakan tombol pembalik kamera (*Camera Flip Toggle*): beralih antara `environment` (kamera belakang) dan `user` (kamera depan).
+  - Dilengkapi *Framing Overlay Box* berpemandu sudut hijau dengan rasio struk proporsional.
+  - Saat tombol *shutter* ditekan, frame aktif dirender ke elemen `<canvas>`, dikonversi menjadi `Blob` format JPEG kualitas 0.85, lalu langsung dioperasikan sebagai objek `File` sementara di memori RAM.
+  - Setelah pemindaian selesai, stream kamera dihentikan (`track.stop()`), menjamin **zero-footprint** pada memori penyimpanan fisik perangkat.
+
+---
+
+### 5.3 Mesin Offline OCR (Tesseract.js) & Heuristik Struk
+
+1. **Inisialisasi Worker Tesseract.js:**
+   - Memanfaatkan library `tesseract.js` yang dikompilasi ke WebAssembly.
+   - Menjalankan pengenalan teks bahasa Indonesia (`ind`) dan Inggris (`eng`) secara offline.
+   - Memberikan indikator progres pengenalan teks secara real-time ($0\% - 100\%$).
+
+2. **Mesin Heuristik Struk (`/src/utils/receiptParser.ts`):**
+   - **Pencarian Total:** Mencari baris teks yang memuat kata kunci: `TOTAL`, `GRAND TOTAL`, `JUMLAH`, `TAGIHAN`, `BAYAR`, `TUNAI`, `CASH`, `NETTO`.
+   - **Filter Validitas Nominal:** Mengabaikan angka kembalian (*Change / Kembali*), nomor telepon kasir, atau nomor seri invoice struk.
+   - **Pencarian Nama Toko/Deskripsi:** Mengambil baris teratas struk sebagai nama merchant/toko (misal: *"INDOMARET"*, *"ALFAMART"*, *"SUPERINDO"*).
+
+3. **Dialog Konfirmasi Interaktif:**
+   - Hasil deteksi OCR (Nominal, Deskripsi, Kategori) ditampilkan dalam kartu konfirmasi sebelum dimasukkan ke dalam buku kas, memungkinkan pengguna mengoreksi kesalahan baca secara manual.
+
+---
+
+### 5.4 Dasbor Analisis Keuangan & Visualisasi Interaktif
+
+#### 1. Kartu Metrik Ringkasan (Summary Cards)
+- **Total Pemasukan:** Akumulasi seluruh nominal bertipe `pemasukan` pada periode terpilih.
+- **Total Pengeluaran:** Akumulasi seluruh nominal bertipe `pengeluaran` pada periode terpilih.
+- **Saldo Bersih (Net Cash Flow):** Total Pemasukan dikurangi Total Pengeluaran.
+- **Rasio Tabungan / Cashflow:** Persentase efisiensi tabungan $\left(\frac{\text{Pemasukan} - \text{Pengeluaran}}{\text{Pemasukan}} \times 100\%\right)$.
+
+#### 2. Visualisasi Grafik Recharts (D3-Powered)
+- **Grafik Garis Tren Saldo Harian (`LineChart`):** Menampilkan pergerakan saldo kumulatif harian dengan kurva halus (*Monotone*), titik data interaktif, dan *Custom Glassmorphism Tooltip*.
+- **Grafik Donat Kontribusi Kategori (`PieChart`):** Memetakan distribusi pengeluaran per kategori dengan palet warna dinamis, label persentase, dan *hover effect*.
+
+#### 3. Filter Rentang Waktu Komprehensif
+- **Hari Ini (`today`):** Transaksi pada tanggal berjalan.
+- **7 Hari Terakhir (`7days`):** Transaksi dalam 7 hari terakhir.
+- **Bulan Ini (`month`):** Transaksi sejak tanggal 1 pada bulan berjalan.
+- **Tahun Ini (`year`):** Transaksi dari 1 Januari pada tahun berjalan.
+- **Rentang Kustom (`custom`):** Pemilihan tanggal awal (*Start Date*) dan tanggal akhir (*End Date*) secara bebas.
+
+#### 4. Buku Kas & Manajemen Transaksi
+- Pencarian cerdas berbasis teks (pencocokan nama & kategori).
+- Filter khusus: Semua, Hanya Pemasukan, Hanya Pengeluaran.
+- Pengurutan dinamis berdasarkan tanggal terbaru atau nominal terbesar.
+- Opsi penghapusan transaksi satuan serta pengosongan seluruh data dengan modal konfirmasi keamanan ganda.
+
+---
+
+### 5.5 Generator Laporan PDF Profesional (jsPDF Vector Engine)
+
+File generator `/src/utils/pdfGenerator.ts` mengimplementasikan pembuatan dokumen PDF berstandar akuntansi:
+
+1. **Geometri & Tata Letak:**
+   - Ukuran kertas A4 ($210\text{ mm} \times 297\text{ mm}$) dengan margin seimbang $14\text{ mm}$.
+   - Kop Laporan: Badge logo `FK` berwarna emerald, tipografi tegas `FahKeu`, metadata periode rekap, dan tanggal pencetakan berstempel WIB.
+
+2. **Ringkasan Finansial Matriks (Summary Grid):**
+   - 3 Kartu statistik horizontal: Total Pemasukan (Emerald), Total Pengeluaran (Rose), dan Saldo Akhir (Slate/Emerald).
+
+3. **Tabel Transaksi Multi-Halaman Dinamis:**
+   - **Kalkulasi Overflow Cerdas:** Memeriksa batas tinggi halaman (`pageHeight - 15mm`). Jika baris transaksi melebihi batas, halaman baru ditambahkan secara otomatis.
+   - **Repeating Table Header:** Setiap halaman baru secara otomatis menggambar ulang kepala tabel transaksi lengkap dengan styling latar belakang gelap `#0f172a`.
+   - **Multi-line Text Wrapping:** Kolom kategori dan deskripsi yang panjang dipotong rapi menggunakan `doc.splitTextToSize`, mencegah teks terpotong atau menimpa kolom lain.
+   - **Format Angka Rupiah Bersih:** Penataan teks rata kanan (*right-aligned*) untuk kolom nominal rupiah.
+
+4. **Footer Dokumen Resmi:**
+   - Garis pemisah tipis di bagian bawah halaman.
+   - Watermark teks: *"Laporan Keuangan Otomatis FahKeu — by Faiz_Fahmi_Id since 2026"*.
+   - Penomoran halaman otomatis (*"Halaman X"*).
+
+---
+
+### 5.6 Integrasi Google Sheets & Backend Google Apps Script
+
+Skrip backend Google Apps Script mandiri (`/src/utils/code.gs.ts`) menyediakan layanan API tanpa server (*serverless endpoint*):
+
+1. **`doGet(e)` - Sinkronisasi & Penarikan Data:**
+   - Parameter `action=get_data`: Membaca seluruh baris dari sheet `Transaksi`, mengonversinya ke format JSON array, dan mengembalikannya ke aplikasi web.
+   - Parameter `action=get_pdf`: Menghasilkan dokumen PDF langsung dari sisi Google Apps Script dan mengirimkannya kembali dalam bentuk stream base64.
+
+2. **`doPost(e)` - Penyimpanan Transaksi & Webhook Telegram:**
+   - Menerima payload transaksi baru dari aplikasi web atau pesan masuk dari webhook Telegram.
+   - Menambahkan baris baru ke sheet: `[ID, Tanggal ISO, Waktu, Tipe, Kategori, Deskripsi, Nominal, Saldo, Sumber]`.
+   - Melakukan formatting otomatis pada sel spreadsheet (format mata uang IDR, penebalan teks header, dan penyesuaian lebar kolom otomatis).
+
+---
+
+### 5.7 Integrasi Asisten Bot Telegram
+
+Aplikasi mendukung pencatatan langsung dari aplikasi Telegram:
+1. Pengguna membuat bot via `@BotFather` di Telegram dan mendapatkan Token API.
+2. Webhook didaftarkan secara otomatis ke URL Google Apps Script.
+3. **Perintah Telegram yang Didukung:**
+   - `/start` atau `/help`: Panduan penggunaan bot.
+   - `/saldo`: Menampilkan total saldo, pemasukan, dan pengeluaran terkini.
+   - `/rekap`: Menampilkan rekap ringkas 5 transaksi terakhir.
+   - `/pdf`: Mengirimkan berkas laporan PDF langsung ke obrolan Telegram.
+   - *Pesan teks bebas:* Memproses bahasa alami (misal: *"beli bensin 30rb"*) dan langsung merekamnya ke Google Sheets.
+
+---
+
+### 5.8 Fitur Unduh Aplikasi (Android & Desktop via Google Drive)
+
+FahKeu menyediakan antarmuka unduhan multi-platform yang terintegrasi di halaman Pengaturan (*Settings*):
+1. **📱 Unduh Android (APK):**
+   - Tombol unduh berikon smartphone yang mengarahkan pengguna ke tautan Google Drive file `.apk` instalasi Android.
+   - Konstanta tautan: `DOWNLOAD_LINK_ANDROID` di `/src/components/SettingsPanel.tsx`.
+2. **💻 Unduh Desktop (Windows / PC):**
+   - Tombol unduh berikon laptop yang mengarahkan pengguna ke tautan Google Drive file `.exe` / installer desktop PC.
+   - Konstanta tautan: `DOWNLOAD_LINK_DESKTOP` di `/src/components/SettingsPanel.tsx`.
+3. **Penyimpanan Offline-First & Dukungan Web Manifest:**
+   - **Web App Manifest (`public/manifest.json`):** Konfigurasi ikon aplikasi resolusi tinggi, tema `#0f172a`, mode tampilan `standalone`, dan orientasi `portrait-primary`.
+   - **Dukungan Tema Dinamis:** Terang (*Light Mode*), Gelap (*Dark Mode*), dan *Luxury Gold*. Preferensi disimpan di `localStorage` (`catatkeu_theme`).
+   - **Kunci Penyimpanan LocalStorage:**
+     - `fahkeu_transactions`: Daftar seluruh objek transaksi.
+     - `fahkeu_messages`: Riwayat percakapan chat bot.
+     - `fahkeu_settings`: Konfigurasi integrasi Google Sheets & Telegram.
+     - `fahkeu_offline_queue`: Antrean mutasi data saat offline.
+
+---
+
+## 6. Spesifikasi Desain & Antarmuka Pengguna (UI/UX)
+
+### 6.1 Palet Warna Sistem
+- **Primary Accent (Emerald):** `#10b981` (Emerald-500), `#059669` (Emerald-600), `#047857` (Emerald-700)
+- **Expense Alert (Rose):** `#f43f5e` (Rose-500), `#e11d48` (Rose-600)
+- **Neutral Dark Canvas (Slate):** `#020617` (Slate-950), `#0f172a` (Slate-900), `#1e293b` (Slate-800)
+- **Neutral Light Canvas:** `#ffffff` (White), `#f8fafc` (Slate-50), `#f1f5f9` (Slate-100), `#e2e8f0` (Slate-200)
+
+### 6.2 Tipografi & Hierarki Teks
+- **Body Font:** Inter / System UI Sans-Serif (Legibilitas tinggi untuk angka moneter).
+- **Scale:** H1 (24px/30px), H2 (18px/24px), Body (14px/20px), Caption (11px–12px), Micro (9px–10px).
+
+### 6.3 Tata Letak Responsif
+- **Mobile Viewport ($< 1024\text{px}$):** Tab navigasi bawah (*Bottom Navigation Bar*) tetap (*sticky*) dengan 3 tombol utama: *Chat*, *Grafik Analisis*, dan *Pengaturan*.
+- **Desktop/Tablet Viewport ($\ge 1024\text{px}$):** Tata letak *Master-Detail Split Grid* 2 kolom: Sisi kiri menampilkan Chat Interaktif berkecepatan tinggi, sisi kanan menampilkan Dasbor Analitik & Statistik secara bersamaan.
+
+---
+
+## 7. Panduan Rekonstruksi Langkah-demi-Langkah (Build 100% Identik)
+
+Untuk membangun ulang proyek ini dari awal secara presisi, ikuti langkah berikut:
+
+### Langkah 1: Inisialisasi Proyek Vite React TypeScript
+```bash
+npm create vite@latest fahkeu -- --template react-ts
+cd fahkeu
+```
+
+### Langkah 2: Instalasi Dependensi Inti
+```bash
+npm install lucide-react recharts jspdf tesseract.js motion clsx tailwind-merge
+npm install -D tailwindcss @tailwindcss/vite
+```
+
+### Langkah 3: Konfigurasi Tailwind CSS di `vite.config.ts`
+Pastikan plugin Tailwind telah diaktifkan:
+```typescript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    port: 3000,
+    host: '0.0.0.0'
+  }
+});
+```
+
+### Langkah 4: Susunan Struktur Folder
+Bangun struktur direktori persis seperti berikut:
+```
+/
+├── public/
+│   ├── manifest.json
+│   ├── favicon.ico
+│   └── icon-512.png
 ├── src/
 │   ├── components/
-│   │   ├── Footer.tsx            # Footer aplikasi + disguised trigger login admin
-│   │   ├── GoogleSheetsModal.tsx # Panel tab: Kategori, Akun Admin, Setup DB, & Info Vercel
-│   │   ├── Header.tsx            # Top header bar, search bar, & filter pil kategori
-│   │   ├── LoadingScreen.tsx     # Full-screen loader bergaya Neo-Brutalism
-│   │   ├── LoginModal.tsx        # Modal autentikasi login admin
-│   │   ├── NoteCard.tsx          # Komponen kartu catatan dengan badge, tags, & aksi
-│   │   ├── NoteEditor.tsx        # Editor modular multi-blok (Markdown, Code, Link)
-│   │   ├── NoteViewer.tsx        # Tampilan detail catatan, markdown render, copy & download code
-│   │   ├── Toast.tsx             # Sistem floating notification alert
-│   │   └── VectorDecorations.tsx # Hiasan grafis vektor SVG, dot-matrix, dan doodle
-│   ├── config/
-│   │   └── appConfig.ts          # Konfigurasi permanen GitHub repo & fallback resolver
-│   ├── data/
-│   │   └── initialNotes.ts       # Template catatan awal siap pakai
+│   │   ├── ChatInterface.tsx    # Antarmuka chat, in-app camera, & OCR handler
+│   │   ├── Dashboard.tsx        # Grafik Recharts, filter periode, & buku kas
+│   │   └── SettingsPanel.tsx    # Konfigurasi Google Sheets & panduan Telegram
 │   ├── utils/
-│   │   ├── cloudSyncRelay.ts     # Magic Link generator, absorber, & broadcast relay
-│   │   ├── codeGsScript.ts       # Generator string kode Google Apps Script untuk disalin
-│   │   ├── defaultNotes.ts       # Fallback catatan offline
-│   │   ├── googleSheetsApi.ts    # Driver komunikasi REST API Google Sheets & local vault
-│   │   └── securityVault.ts      # Enkripsi data vault XOR + Base64 multi-layer
-│   ├── App.tsx                   # Main orchestrator component & master state
-│   ├── index.css                 # Import Tailwind CSS v4 & custom scrollbar
-│   ├── main.tsx                  # React DOM root mounting
-│   └── types.ts                  # Deklarasi TypeScript interface & types
-├── .env.example                  # Dokumentasi environment variables
-├── index.html                    # Entry point HTML & Google Fonts
-├── metadata.json                 # Konfigurasi platform & frame permissions
-├── package.json                  # Daftar dependensi npm & build scripts
-├── README.md                     # Dokumen PRD & Master Blueprint ini
-├── server.ts                     # Full-stack Express server + Vite middleware
-├── tsconfig.json                 # Konfigurasi TypeScript compiler
-├── vercel.json                   # Konfigurasi SPA routing rewrite untuk Vercel
-└── vite.config.ts                # Konfigurasi bundler Vite
+│   │   ├── categories.ts        # Daftar 9 kategori, ikon, dan keyword matcher
+│   │   ├── code.gs.ts           # Template skrip backend Google Apps Script
+│   │   ├── parser.ts            # Parser NLP bahasa alami Bahasa Indonesia
+│   │   ├── pdfGenerator.ts      # Generator laporan PDF profesional jsPDF
+│   │   └── receiptParser.ts     # Heuristik pembersih teks OCR struk
+│   ├── App.tsx                  # Root state management & layout orchestration
+│   ├── index.css                # @import "tailwindcss";
+│   ├── main.tsx                 # Entrypoint React
+│   └── types.ts                 # Definisi tipe & interface TypeScript
+├── index.html
+├── package.json
+└── tsconfig.json
 ```
 
 ---
 
-## 7. 🚀 PANDUAN LANGKAH DEMI LANGKAH KLONING & DEPLOYMENT
+## 8. Matriks Penanganan Error & Kasus Tepi (Edge Cases)
 
-### 7.1. Persiapan Repositori & Instalasi Lokal
-1. **Clone repositori ini:**
-   ```bash
-   git clone https://github.com/username-anda/fahnotes.git
-   cd fahnotes
-   ```
-2. **Install seluruh dependensi:**
-   ```bash
-   npm install
-   ```
-3. **Jalankan local development server:**
-   ```bash
-   npm run dev
-   ```
-   Aplikasi akan berjalan pada port `http://localhost:3000`.
+| Skenario Kasus Tepi | Potensi Masalah | Solusi Penanganan yang Diimplementasikan |
+|---|---|---|
+| **Izin Kamera Ditolak Pengguna** | Aplikasi crash atau video hitam kosong saat buka kamera. | Penangkapan blok `try/catch` pada `getUserMedia`, menampilkan notifikasi peringatan santun, dan otomatis mengalihkan pengguna ke tombol pilih file dari galeri. |
+| **Foto Struk Buram / Terbalik** | OCR menghasilkan teks acak (*garbage text*). | Heuristik *fallback* nilai default $0$, disertai dialog pratinjau hasil deteksi di mana pengguna dapat mengedit angka & deskripsi sebelum disimpan. |
+| **Pesan Chat Tanpa Angka** (misal *"halo bot"*) | Parser menghasilkan transaksi bernilai 0 atau salah rekam. | Parser mengembalikan status `success: false`. Bot memberikan respons panduan ramah dengan contoh penulisan yang benar. |
+| **Tabel PDF Lebih dari 5 Halaman** | Teks terpotong di tepi bawah kertas. | Logika `checkPageOverflow` dinamis otomatis membuat halaman baru dan menggambar ulang `drawTableHeader` serta footer penomoran. |
+| **Koneksi Internet Putus Saat Simpan** | Data hilang jika sinkronisasi Google Sheets gagal. | Data selalu disimpan terlebih dahulu ke `localStorage`, mutasi gagal dimasukkan ke `offlineActionQueue` untuk dicoba kembali saat online. |
 
 ---
 
-### 7.2. Setup Google Spreadsheet & Deployment Google Apps Script
-1. Buka [Google Sheets](https://sheets.new) dan buat spreadsheet baru (beri nama misalnya: `fahnotes_database`).
-2. Klik menu **Ekstensi (*Extensions*)** ➡️ **Apps Script**.
-3. Hapus seluruh kode bawaan di editor Apps Script, lalu tempelkan seluruh kode dari [Bab 5.2](#52-spesifikasi-endpoint-google-apps-script-codegs).
-4. Klik ikon **Simpan** (💾).
-5. Klik tombol biru **Deploy** (kanan atas) ➡️ **New deployment (*Penerapan baru*)**.
-6. Klik ikon roda gigi ⚙️ (*Select type*) ➡️ Pilih **Web app**.
-7. Isi konfigurasi:
-   * **Description**: `fahnotes API v2`
-   * **Execute as**: **Me (*Saya*)**
-   * **Who has access**: **Anyone (*Siapa saja*)** *(Wajib agar web app dapat diakses)*.
-8. Klik **Deploy** ➡️ Berikan izin akses (*Authorize Access*) ➡️ Pilih akun Google ➡️ **Advanced** ➡️ **Go to fahnotes (unsafe)** ➡️ **Allow**.
-9. Salin **Web app URL** yang berakhiran `/exec`.
+## 9. Panduan Deployment & Konfigurasi Lingkungan
+
+### 9.1 Berkas `.env`
+Buat berkas `.env` dari contoh `.env.example`:
+```env
+# URL tempat aplikasi di-hosting (opsional untuk referensi webhook)
+APP_URL="http://localhost:3000"
+
+# Kunci API Gemini (jika mengaktifkan asisten AI server-side tambahan)
+GEMINI_API_KEY=""
+```
+
+### 9.2 Kompilasi & Build Produksi
+```bash
+npm run build
+```
+Output berkas statis siap saji akan dibuat di folder `/dist`, kompatibel 100% dengan platform hosting modern:
+- **Vercel / Netlify / Cloudflare Pages:** Drag-and-drop folder `dist` atau hubungkan repositori GitHub.
+- **GitHub Pages:** Atur direktori publik ke `dist`.
+- **Cloud Run / Docker Container:** Sajikan folder `dist` menggunakan web server ringan Nginx atau Node.js static server.
 
 ---
 
-### 7.3. Deploy ke Vercel (Penyimpanan Permanen Otomatis)
+## 10. Panduan Pengaturan Tautan Google Drive & Modifikasi di GitHub
 
-#### Cara A: Input Langsung di Website (Paling Mudah & Praktis)
-1. Deploy repositori GitHub Anda ke **Vercel** (Cukup klik *Import Project* ➡️ *Deploy*).
-2. Buka website Anda yang sudah live di Vercel.
-3. Login sebagai Admin (klik `by: Faiz_Fahmi_ID` di footer ➡️ masukkan user: `Faiz_Fahmi_ID`, pass: `admin123`).
-4. Klik tombol **Database Google Sheets** di navigasi atas ➡️ Masukkan URL Web App Anda ➡️ Klik **"Simpan URL"**.
-5. Klik tombol **"Salin Link Auto-Connect"** untuk membagikan atau membukanya di perangkat lain.
+Bagian ini menjelaskan cara mengelola tombol unduhan Android & Desktop secara manual di GitHub:
 
-#### Cara B: Simpan Permanen di Repositori GitHub (`src/config/appConfig.ts`)
-1. Buka file `src/config/appConfig.ts` di GitHub repo Anda.
-2. Masukkan URL Web App Anda pada baris `GOOGLE_SHEETS_WEB_APP_URL`:
+### 10.1 Cara Memasukkan Link Google Drive Sendiri (Android & Desktop)
+
+1. Buka berkas **`/src/components/SettingsPanel.tsx`** di repositori GitHub Anda.
+2. Klik ikon pensil (**Edit this file**) di GitHub.
+3. Di bagian paling atas berkas (baris 25–28), temukan variabel tautan:
    ```typescript
-   export const APP_CONFIG = {
-     GOOGLE_SHEETS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycby.../exec',
-     DEFAULT_ADMIN_USERNAME: 'Faiz_Fahmi_ID',
-     DEFAULT_ADMIN_PASSWORD: 'admin123',
-     // ...
-   };
+   // ============================================================================
+   // KONFIGURASI TAUTAN UNDUHAN GOOGLE DRIVE (Android & Desktop)
+   // Masukkan link Google Drive / file APK / file Installer Desktop Anda di sini:
+   // ============================================================================
+   export const DOWNLOAD_LINK_ANDROID = "https://drive.google.com/drive/folders/LINK_GOOGLE_DRIVE_APK_ANDA";
+   export const DOWNLOAD_LINK_DESKTOP = "https://drive.google.com/drive/folders/LINK_GOOGLE_DRIVE_DESKTOP_ANDA";
    ```
-3. Lakukan **Commit & Push**. Vercel akan otomatis me-redeploy dan link database akan **selamanya terhubung** untuk seluruh pengunjung di seluruh dunia.
-
-#### Cara C: Menggunakan Vercel Environment Variables
-1. Buka **Vercel Dashboard** ➡️ Masuk ke Project Anda.
-2. Klik **Settings** ➡️ **Environment Variables**.
-3. Tambahkan variable:
-   * **Key**: `VITE_GOOGLE_SHEETS_URL`
-   * **Value**: `URL Web App Google Apps Script Anda`
-4. Simpan dan lakukan **Redeploy**.
+4. Ganti URL contoh di atas dengan tautan file / folder Google Drive Anda yang sudah diatur izin publiknya (*Anyone with the link can view/download*).
+5. Klik tombol hijau **Commit changes...**.
 
 ---
 
-## 8. 🎨 DESAIN SISTEM UI/UX: NEO-BRUTALISM GUIDELINES
+### 10.2 Cara Menghapus Kartu Unduh Jika Tidak Diinginkan di Website
 
-Proyek ini menerapkan filosofi desain **Neo-Brutalism** terstruktur:
-
-| Elemen Desain | Karakteristik & Nilai CSS |
-| :--- | :--- |
-| **Border Utama** | Garis tegas solid 2px atau 3px berwarna hitam pekat (`border-2 border-black` / `#000000`). |
-| **Hard Offset Shadow** | Bayangan tanpa blur offset tajam: `shadow-[3px_3px_0px_#000]` atau `shadow-[5px_5px_0px_#000]`. |
-| **Palet Warna Aksen** | Kuning Neon (`#FFD166`), Hijau Mint (`#2DD4BF`), Pink Flamingo (`#FF6584`), Indigo (`#818CF8`), Amber (`#F59E0B`). |
-| **Background Kanvas** | Neutral Off-White hangat (`#FAF5EE`) dengan pola dot-matrix SVG halus di latar belakang. |
-| **Micro-Interactions** | Efek tombol saat ditekan: `active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000]`. |
-| **Tipografi** | Heading dengan font display berbobot *Black/ExtraBold* (`font-black`), body text dengan tracking seimbang, dan font monospace untuk sintaks kode. |
+Jika di masa mendatang Anda ingin menonaktifkan fitur unduh aplikasi ini di website:
+1. Buka berkas **`/src/components/SettingsPanel.tsx`** di GitHub Anda.
+2. Cari blok yang telah diapit penanda komentar:
+   - **Mulai:** `{/* [SECTION MULAI] FITUR UNDUH APLIKASI (ANDROID & DESKTOP VIA GOOGLE DRIVE) */}`
+   - **Selesai:** `{/* [SECTION SELESAI] FITUR UNDUH APLIKASI (ANDROID & DESKTOP VIA GOOGLE DRIVE) */}`
+3. Hapus seluruh blok tag `<div>` di antara kedua penanda tersebut.
+4. Klik **Commit changes...**. Halaman Pengaturan akan bersih tanpa error.
 
 ---
 
-## 9. 🔒 MATRIKS KEAMANAN & KEBIJAKAN DATA
-
-1. **Enkripsi Klien (Client-Side Obfuscation & Vault)**: URL Google Sheets dan kredensial admin yang tersimpan di browser diacak menggunakan enkripsi XOR multi-putaran dan encoding base64 untuk mencegah inspeksi langsung dari devtools publik.
-2. **Sanitasi URL**: URL sensitif disamarkan pada antarmuka admin (misal: `https://script.google.com/macros/s/AKfy...exec`) dengan opsi toggle visibility (mata) yang hanya bisa dilihat oleh admin.
-3. **CORS & Rate Limiting Handled by Google**: Google Apps Script secara native menangani CORS dan menyediakan proteksi throttling terhadap brute force attack.
-4. **Isolasi Mode Pengunjung**: Seluruh komponen form input dan mutasi data (`POST`/`DELETE`) hanya dirender ke dalam React Virtual DOM jika status state `isAdmin === true`.
-
----
-
-## 10. 🗺️ RENCANA PEMELIHARAAN & ROADMAP MASA DEPAN
-
-* [x] **v1.0.0**: Rilis perdana antarmuka Neo-Brutalism & editor catatan single-block.
-* [x] **v2.0.0**: Editor modular multi-blok (Markdown, Terminal Code, Download Script).
-* [x] **v2.3.0**: Integrasi basis data Google Spreadsheet via Google Apps Script Web App.
-* [x] **v2.5.0**: Multi-tier persistence (GitHub config, Vercel Serverless `/api/global-config`, dan 1-Click Magic Link).
-* [ ] **v3.0.0 (Roadmap)**:
-  * Fitur eksekusi Python langsung di browser via WebAssembly (Pyodide).
-  * Ekspor seluruh database ke file arsip `.zip` yang berisi folder terstruktur per kategori.
-  * Dukungan tema kontras gelap penuh (*Dark Neo-Brutalist Mode*).
-
----
-
-## 📜 ATRIBUSI & HAK CIPTA
-
-Dikonseptualisasikan, dirancang, dan dibangun dengan dedikasi tinggi untuk para pengembang perangkat lunak dan komunitas otomatisasi oleh:
-
-👨‍💻 **Faiz_Fahmi_ID**  
-⚡ **Project:** `fahnotes` — The Modern Developer Knowledge Base & Code Hub  
-🇮🇩 *Made with passion for developers nationwide & worldwide.*
+## 📜 Lisensi & Atribusi
+* **Pengembang:** Faiz_Fahmi_Id  
+* **Tahun Pembuatan:** 2026  
+* **Lisensi:** MIT License — Bebas digunakan, dipelajari, dan dikembangkan kembali.
