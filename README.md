@@ -415,6 +415,8 @@ Bangun struktur direktori persis seperti berikut:
 | **Pesan Chat Tanpa Angka** (misal *"halo bot"*) | Parser menghasilkan transaksi bernilai 0 atau salah rekam. | Parser mengembalikan status `success: false`. Bot memberikan respons panduan ramah dengan contoh penulisan yang benar. |
 | **Tabel PDF Lebih dari 5 Halaman** | Teks terpotong di tepi bawah kertas. | Logika `checkPageOverflow` dinamis otomatis membuat halaman baru dan menggambar ulang `drawTableHeader` serta footer penomoran. |
 | **Koneksi Internet Putus Saat Simpan** | Data hilang jika sinkronisasi Google Sheets gagal. | Data selalu disimpan terlebih dahulu ke `localStorage`, mutasi gagal dimasukkan ke `offlineActionQueue` untuk dicoba kembali saat online. |
+| **Tombol Run di Apps Script Error `Cannot read properties of undefined (parameter)`** | Mengklik "Jalankan" pada fungsi `doGet` atau `doPost` di editor Google Apps Script tanpa parameter event `e`. | Skrip telah diproteksi dengan `e = e || {}` serta disediakan fungsi khusus `testSheet()` untuk uji coba koneksi & pembuatan tabel sheet secara aman langsung dari editor Apps Script. |
+| **Data Web Tidak Masuk ke Spreadsheet (CORS / Payload Block)** | Browser memblokir pengiriman POST lintas domain (*CORS preflight*). | Menggunakan payload `text/plain;charset=utf-8` dengan mode `no-cors` dan mekanisme fallback otomatis ke endpoint `doGet` (`?action=add&data=...`) untuk menjamin 100% data tersimpan di Google Sheet. |
 
 ---
 

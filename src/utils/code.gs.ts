@@ -10,78 +10,166 @@ export const GOOGLE_APPS_SCRIPT_CODE = `/**
 // Jika Anda ingin Bot Telegram merespon otomatis, isi token bot di sini atau kirimkan via Webhook.
 var TELEGRAM_BOT_TOKEN = ""; 
 
-function doGet(e) {
+/**
+ * Fungsi Pengujian Mandiri (Bisa dipilih dan diklik "Jalankan" di Editor Apps Script).
+ * Memastikan skrip terhubung dengan benar ke spreadsheet aktif.
+ */
+function testSheet() {
   var sheet = getOrCreateSheet();
-  var rows = sheet.getDataRange().getValues();
-  var transactions = [];
-  
-  // Lewati baris pertama (header)
-  for (var i = 1; i < rows.length; i++) {
-    var row = rows[i];
-    if (!row[0]) continue; // Skip jika ID kosong
-    transactions.push({
-      id: row[0].toString(),
-      date: row[1],
-      type: row[2],
-      amount: Number(row[3]),
-      description: row[4],
-      category: row[5],
-      source: row[6] || 'web'
-    });
-  }
-  
-  // Handle PDF Export Page Request
-  if (e.parameter && e.parameter.action === 'pdf') {
-    var period = e.parameter.period || 'all';
-    var filtered = [];
-    var periodTitle = 'Semua Transaksi';
-    var now = new Date();
+  var rows = sheet.getLastRow();
+  Logger.log("✅ Berhasil terhubung ke spreadsheet: " + sheet.getParent().getName());
+  Logger.log("Nama Sheet: " + sheet.getName() + " | Total Baris: " + rows);
+  return "Sukses! Spreadsheet aktif terhubung. Total baris saat ini: " + rows;
+}
 
-    if (period === 'week') {
-      var sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      filtered = transactions.filter(function(t) {
-        return new Date(t.date) >= sevenDaysAgo;
-      });
-      periodTitle = '7 Hari Terakhir (Minggu Ini)';
-    } else if (period === 'month') {
-      var thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      filtered = transactions.filter(function(t) {
-        return new Date(t.date) >= thirtyDaysAgo;
-      });
-      periodTitle = '30 Hari Terakhir (Bulan Ini)';
-    } else if (period === 'year') {
-      var currentYear = now.getFullYear();
-      filtered = transactions.filter(function(t) {
-        return new Date(t.date).getFullYear() === currentYear;
-      });
-      periodTitle = 'Tahun ' + currentYear;
-    } else {
-      filtered = transactions;
-      periodTitle = 'Semua Transaksi';
+function doGet(e) {
+  try {
+    // Pengamanan parameter agar tidak error saat diuji langsung via tombol 'Jalankan'
+    e = e || {};
+    var parameter = e.parameter || {};
+    
+    // 1. Dukungan Aksi dari Web App via GET (Fallback handal jika POST terkendala jaringan/CORS)
+    if (parameter.action === 'add' || parameter.action === 'delete' || parameter.action === 'clear') {
+      var payload = { action: parameter.action };
+      if (parameter.data) {
+        try {
+          var parsedData = JSON.parse(parameter.data);
+          payload = Object.assign(payload, parsedData);
+        } catch (err) {}
+      }
+      if (parameter.transaction) {
+        try {
+          payload.transaction = typeof parameter.transaction === 'string' ? JSON.parse(parameter.transaction) : parameter.transaction;
+        } catch(err) {}
+      }
+      if (parameter.id) {
+        payload.id = parameter.id;
+      }
+      return handleWebAppAction(payload);
     }
+    
+    var sheet = getOrCreateSheet();
+    var rows = sheet.getDataRange().getValues();
+    var transactions = [];
+    
+    // Lewati baris pertama (header)
+    for (var i = 1; i < rows.length; i++) {
+      var row = rows[i];
+      if (!row[0]) continue; // Skip jika ID kosong
 
-    var htmlTemplate = getPdfHtmlTemplate(filtered, periodTitle);
-    return HtmlService.createHtmlOutput(htmlTemplate)
-      .setTitle("Unduh Rekap PDF - FahKeu")
-      .setXObjectHeaderMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      var dateVal = row[1];
+      if (dateVal instanceof Date) {
+        dateVal = dateVal.toISOString();
+      } else if (dateVal) {
+        dateVal = dateVal.toString();
+      } else {
+        dateVal = new Date().toISOString();
+      }
+
+      transactions.push({
+        id: row[0].toString(),
+        date: dateVal,
+        type: row[2] ? row[2].toString() : 'pengeluaran',
+        amount: Number(row[3]) || 0,
+        description: row[4] ? row[4].toString() : '',
+        category: row[5] ? row[5].toString() : 'Lainnya',
+        source: row[6] ? row[6].toString() : 'web'
+      });
+    }
+    
+    // 2. Handle PDF Export Page Request
+    if (parameter.action === 'pdf') {
+      var period = parameter.period || 'all';
+      var filtered = [];
+      var periodTitle = 'Semua Transaksi';
+      var now = new Date();
+
+      if (period === 'week') {
+        var sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        filtered = transactions.filter(function(t) {
+          return new Date(t.date) >= sevenDaysAgo;
+        });
+        periodTitle = '7 Hari Terakhir (Minggu Ini)';
+      } else if (period === 'month') {
+        var thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        filtered = transactions.filter(function(t) {
+          return new Date(t.date) >= thirtyDaysAgo;
+        });
+        periodTitle = '30 Hari Terakhir (Bulan Ini)';
+      } else if (period === 'year') {
+        var currentYear = now.getFullYear();
+        filtered = transactions.filter(function(t) {
+          return new Date(t.date).getFullYear() === currentYear;
+        });
+        periodTitle = 'Tahun ' + currentYear;
+      } else {
+        filtered = transactions;
+        periodTitle = 'Semua Transaksi';
+      }
+
+      var htmlTemplate = getPdfHtmlTemplate(filtered, periodTitle);
+      return HtmlService.createHtmlOutput(htmlTemplate)
+        .setTitle("Unduh Rekap PDF - FahKeu")
+        .setXObjectHeaderMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+    
+    // 3. Urutkan berdasarkan tanggal terbaru
+    transactions.sort(function(a, b) {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      data: transactions
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    Logger.log("doGet error: " + err.toString());
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
   }
-  
-  // Urutkan berdasarkan tanggal terbaru
-  transactions.sort(function(a, b) {
-    return new Date(b.date) - new Date(a.date);
-  });
-  
-  return ContentService.createTextOutput(JSON.stringify({
-    success: true,
-    data: transactions
-  })).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
   try {
-    var postData = JSON.parse(e.postData.contents);
+    e = e || {};
+    var postData = null;
+    
+    // 1. Coba baca dari e.postData.contents
+    if (e.postData && e.postData.contents) {
+      try {
+        postData = JSON.parse(e.postData.contents);
+      } catch (parseErr) {
+        Logger.log("Bukan JSON langsung: " + parseErr.toString());
+      }
+    }
+    
+    // 2. Coba baca dari e.parameter (jika dikirim sebagai URL-encoded form atau query)
+    if (!postData && e.parameter) {
+      postData = e.parameter;
+      if (postData.data && typeof postData.data === 'string') {
+        try {
+          var parsedData = JSON.parse(postData.data);
+          postData = Object.assign({}, postData, parsedData);
+        } catch (err) {}
+      }
+      if (postData.transaction && typeof postData.transaction === 'string') {
+        try {
+          postData.transaction = JSON.parse(postData.transaction);
+        } catch (err) {}
+      }
+    }
+    
+    if (!postData) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error: "Payload kosong atau tidak dapat di-parse"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
     
     // CASE A: Request dari Aplikasi Web (Web App)
     if (postData.action) {
@@ -99,9 +187,7 @@ function doPost(e) {
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch(err) {
-    // Jika JSON parsing gagal, coba cek apakah dari Telegram Webhook (biasanya berupa JSON valid)
-    // atau lakukan logging
-    Logger.log(err.toString());
+    Logger.log("doPost error: " + err.toString());
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       error: err.toString()
@@ -111,68 +197,99 @@ function doPost(e) {
 
 // Handler untuk aksi dari Web App
 function handleWebAppAction(payload) {
-  var sheet = getOrCreateSheet();
-  
-  if (payload.action === 'add') {
-    var t = payload.transaction;
-    sheet.appendRow([
-      t.id,
-      t.date,
-      t.type,
-      t.amount,
-      t.description,
-      t.category,
-      t.source || 'web'
-    ]);
+  try {
+    var sheet = getOrCreateSheet();
     
-    return ContentService.createTextOutput(JSON.stringify({
-      success: true,
-      message: "Transaksi berhasil ditambahkan"
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-  
-  if (payload.action === 'delete') {
-    var idToDelete = payload.id;
-    var rows = sheet.getDataRange().getValues();
-    var foundIndex = -1;
+    if (payload.action === 'add') {
+      var t = payload.transaction;
+      if (!t && payload.data) {
+        t = payload.data;
+      }
+      if (typeof t === 'string') {
+        try { t = JSON.parse(t); } catch(e) {}
+      }
+      if (!t) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          error: "Data transaksi tidak ditemukan dalam payload"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var txId = t.id || ("tx_" + Date.now());
+      var txDate = t.date || new Date().toISOString();
+      var txType = t.type || 'pengeluaran';
+      var txAmount = Number(t.amount) || 0;
+      var txDesc = t.description || '';
+      var txCat = t.category || 'Lainnya';
+      var txSource = t.source || 'web';
+
+      sheet.appendRow([
+        txId,
+        txDate,
+        txType,
+        txAmount,
+        txDesc,
+        txCat,
+        txSource
+      ]);
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        message: "Transaksi berhasil dicatat ke spreadsheet",
+        id: txId
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
     
-    for (var i = 1; i < rows.length; i++) {
-      if (rows[i][0].toString() === idToDelete.toString()) {
-        foundIndex = i + 1; // +1 karena baris di spreadsheet mulai dari 1 dan lompati header
-        break;
+    if (payload.action === 'delete') {
+      var idToDelete = payload.id;
+      var rows = sheet.getDataRange().getValues();
+      var foundIndex = -1;
+      
+      for (var i = 1; i < rows.length; i++) {
+        if (rows[i][0] && rows[i][0].toString() === idToDelete.toString()) {
+          foundIndex = i + 1; // +1 karena baris di spreadsheet mulai dari 1 dan lompati header
+          break;
+        }
+      }
+      
+      if (foundIndex !== -1) {
+        sheet.deleteRow(foundIndex);
+        return ContentService.createTextOutput(JSON.stringify({
+          success: true,
+          message: "Transaksi berhasil dihapus dari spreadsheet"
+        })).setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          error: "Transaksi tidak ditemukan di spreadsheet"
+        })).setMimeType(ContentService.MimeType.JSON);
       }
     }
     
-    if (foundIndex !== -1) {
-      sheet.deleteRow(foundIndex);
+    if (payload.action === 'clear') {
+      // Hapus semua baris kecuali header
+      var lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        sheet.deleteRows(2, lastRow - 1);
+      }
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
-        message: "Transaksi berhasil dihapus"
-      })).setMimeType(ContentService.MimeType.JSON);
-    } else {
-      return ContentService.createTextOutput(JSON.stringify({
-        success: false,
-        error: "Transaksi tidak ditemukan"
+        message: "Seluruh data transaksi di spreadsheet berhasil dibersihkan"
       })).setMimeType(ContentService.MimeType.JSON);
     }
-  }
-  
-  if (payload.action === 'clear') {
-    // Hapus semua baris kecuali header
-    var lastRow = sheet.getLastRow();
-    if (lastRow > 1) {
-      sheet.deleteRows(2, lastRow - 1);
-    }
+    
     return ContentService.createTextOutput(JSON.stringify({
-      success: true,
-      message: "Seluruh transaksi dibersihkan"
+      success: false,
+      error: "Aksi tidak dikenal: " + payload.action
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    Logger.log("handleWebAppAction error: " + err.toString());
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: err.toString()
     })).setMimeType(ContentService.MimeType.JSON);
   }
-  
-  return ContentService.createTextOutput(JSON.stringify({
-    success: false,
-    error: "Aksi tidak dikenal"
-  })).setMimeType(ContentService.MimeType.JSON);
 }
 
 // Handler untuk Pesan dari Bot Telegram
@@ -362,7 +479,29 @@ function handleTelegramMessage(payload) {
 
 // Fungsi untuk membuat / mengambil Sheet 'Transactions'
 function getOrCreateSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = null;
+  try {
+    ss = SpreadsheetApp.getActiveSpreadsheet();
+  } catch (e) {
+    Logger.log("getActiveSpreadsheet error: " + e.toString());
+  }
+
+  // Jika script dibuat secara standalone (terpisah di script.google.com)
+  if (!ss) {
+    var sheetId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+    if (sheetId) {
+      try {
+        ss = SpreadsheetApp.openById(sheetId.trim());
+      } catch (openErr) {
+        Logger.log("openById error: " + openErr.toString());
+      }
+    }
+  }
+
+  if (!ss) {
+    throw new Error("Spreadsheet aktif tidak ditemukan! Pastikan skrip ini dibuat langsung dari Google Spreadsheet Anda (menu Ekstensi > Apps Script). Jika membuat skrip terpisah, tambahkan SPREADSHEET_ID di Pengaturan Proyek > Properti Script.");
+  }
+
   var sheet = ss.getSheetByName('Transactions');
   if (!sheet) {
     sheet = ss.insertSheet('Transactions');
@@ -370,6 +509,8 @@ function getOrCreateSheet() {
     sheet.appendRow(['ID', 'Tanggal', 'Tipe', 'Jumlah', 'Deskripsi', 'Kategori', 'Sumber']);
     // Format Header
     sheet.getRange("A1:G1").setFontWeight("bold").setBackground("#F3F4F6");
+    // Format kolom Jumlah sebagai angka
+    sheet.getRange("D2:D").setNumberFormat("#,##0");
   }
   return sheet;
 }
@@ -931,7 +1072,6 @@ function getPdfHtmlTemplate(transactions, periodTitle) {
 '        currentY += 10;\\n' +
 '        doc.setDrawColor(226, 232, 240);\\n' +
 '        doc.setLineWidth(0.5);\\n' +
-'        doc.line(margin, currentY, pageWidth - margin, currentY);'      doc.setLineWidth(0.5);\\n' +
 '        doc.line(margin, currentY, pageWidth - margin, currentY);\\n' +
 '        currentY += 8;\\n' +
 '        const sortedTransactions = [...transactions].sort(function(a, b) {\\n' +

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Clipboard,
   Check,
@@ -31,7 +31,7 @@ export const DOWNLOAD_LINK_DESKTOP = "https://drive.google.com/drive/folders/YOU
 interface SettingsPanelProps {
   settings: AppSettings;
   onSaveSettings: (settings: AppSettings) => void;
-  onTestConnection: () => Promise<boolean>;
+  onTestConnection: (urlToTest?: string) => Promise<boolean>;
   theme: 'light' | 'dark' | 'luxury-gold';
   onChangeTheme: (theme: 'light' | 'dark' | 'luxury-gold') => void;
 }
@@ -43,15 +43,32 @@ export default function SettingsPanel({
   theme,
   onChangeTheme
 }: SettingsPanelProps) {
-  const [googleSheetUrl, setGoogleSheetUrl] = useState(settings.googleSheetUrl);
-  const [telegramBotToken, setTelegramBotToken] = useState(settings.telegramBotToken);
-  const [telegramChatId, setTelegramChatId] = useState(settings.telegramChatId);
-  const [useCloudStorage, setUseCloudStorage] = useState(settings.useCloudStorage);
+  const [googleSheetUrl, setGoogleSheetUrl] = useState(settings.googleSheetUrl || '');
+  const [telegramBotToken, setTelegramBotToken] = useState(settings.telegramBotToken || '');
+  const [telegramChatId, setTelegramChatId] = useState(settings.telegramChatId || '');
+  const [useCloudStorage, setUseCloudStorage] = useState(
+    settings.useCloudStorage !== undefined 
+      ? settings.useCloudStorage 
+      : Boolean(settings.googleSheetUrl)
+  );
 
   const [copied, setCopied] = useState(false);
+  const [savedToast, setSavedToast] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<'idle' | 'success' | 'failed'>('idle');
   
+  // Sync state when settings prop changes
+  useEffect(() => {
+    setGoogleSheetUrl(settings.googleSheetUrl || '');
+    setTelegramBotToken(settings.telegramBotToken || '');
+    setTelegramChatId(settings.telegramChatId || '');
+    setUseCloudStorage(
+      settings.useCloudStorage !== undefined 
+        ? settings.useCloudStorage 
+        : Boolean(settings.googleSheetUrl)
+    );
+  }, [settings]);
+
   // Telegram webhook states
   const [webhookStatus, setWebhookStatus] = useState<'idle' | 'loading' | 'success' | 'failed'>('idle');
   const [webhookMessage, setWebhookMessage] = useState('');
@@ -63,19 +80,24 @@ export default function SettingsPanel({
   };
 
   const handleSave = () => {
+    const trimmedUrl = googleSheetUrl.trim();
+    // Jika URL diisi, otomatis aktifkan cloud storage
+    const enableCloud = Boolean(trimmedUrl && useCloudStorage !== false);
     onSaveSettings({
-      googleSheetUrl: googleSheetUrl.trim(),
+      googleSheetUrl: trimmedUrl,
       telegramBotToken: telegramBotToken.trim(),
       telegramChatId: telegramChatId.trim(),
-      useCloudStorage: useCloudStorage && !!googleSheetUrl.trim(),
+      useCloudStorage: enableCloud,
     });
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 3000);
   };
 
   const handleTestConnect = async () => {
     setTestingConnection(true);
     setTestResult('idle');
     try {
-      const res = await onTestConnection();
+      const res = await onTestConnection(googleSheetUrl.trim());
       setTestResult(res ? 'success' : 'failed');
     } catch {
       setTestResult('failed');
@@ -294,8 +316,13 @@ export default function SettingsPanel({
                 type="text"
                 value={googleSheetUrl}
                 onChange={(e) => {
-                  setGoogleSheetUrl(e.target.value);
-                  if (!e.target.value) setUseCloudStorage(false);
+                  const val = e.target.value;
+                  setGoogleSheetUrl(val);
+                  if (val.trim()) {
+                    setUseCloudStorage(true);
+                  } else {
+                    setUseCloudStorage(false);
+                  }
                 }}
                 placeholder="https://script.google.com/macros/s/.../exec"
                 className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
@@ -304,10 +331,10 @@ export default function SettingsPanel({
             </div>
 
             {/* Test Connection and Save Buttons */}
-            <div className="flex flex-wrap gap-2.5 pt-2">
+            <div className="flex flex-wrap items-center gap-2.5 pt-2">
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95"
               >
                 Simpan Konfigurasi
               </button>
@@ -321,6 +348,13 @@ export default function SettingsPanel({
                   <RefreshCw className={`w-3.5 h-3.5 ${testingConnection && 'animate-spin'}`} />
                   <span>Uji Hubungkan</span>
                 </button>
+              )}
+
+              {savedToast && (
+                <div className="flex items-center space-x-1 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                  <Check className="w-4 h-4" />
+                  <span>Tersimpan & Aktif!</span>
+                </div>
               )}
 
               {testResult === 'success' && (
@@ -519,6 +553,9 @@ export default function SettingsPanel({
                   </li>
                   <li>
                     <b className="text-slate-800 dark:text-white">Bersihkan Riwayat Chat:</b> Ketik perintah chat seperti <i className="text-indigo-600 dark:text-amber-200 not-italic font-semibold">"hapus chat"</i>, <i className="text-indigo-600 dark:text-amber-200 not-italic font-semibold">"bersihkan chat"</i>, atau klik tombol <b className="text-indigo-600 dark:text-amber-300 font-bold">Hapus Chat</b> di atas ruang obrolan untuk mengosongkan layar obrolan agar selalu rapi.
+                  </li>
+                  <li>
+                    <b className="text-slate-800 dark:text-white">Uji Coba di Apps Script:</b> Jika ingin mencoba menjalankan fungsi langsung di editor Apps Script dengan tombol <b>Jalankan (Run)</b>, pilih fungsi <code className="text-indigo-600 dark:text-amber-300 font-bold">testSheet</code> (jangan pilih doGet/doPost karena kedua fungsi tersebut hanya dipanggil oleh sistem Web App).
                   </li>
                 </ul>
               </div>
