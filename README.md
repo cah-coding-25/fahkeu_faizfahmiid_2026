@@ -1,483 +1,336 @@
-# FahKeu 🪙 — Product Requirement Document (PRD) & Blueprint Spesifikasi Lengkap
+# FahKeu 🪙 — Aplikasi Pencatat Keuangan Pintar & Interaktif
+### *Smart Personal Finance Assistant with Natural Language, In-Memory Camera OCR, and Two-Way Cloud Sync*
 
-> **Dokumen Spesifikasi Teknis & Kebutuhan Produk (PRD) Komprehensif**  
-> *Panduan referensi 100% lengkap untuk merekonstruksi, mengembangkan, dan memelihara aplikasi **FahKeu** secara identik dari nol.*
-
----
-
-## 📑 Daftar Isi
-1. [Ringkasan Eksekutif & Visi Produk](#1-ringkasan-eksekutif--visi-produk)
-2. [Persona Pengguna & Skenario Penggunaan](#2-persona-pengguna--skenario-penggunaan)
-3. [Arsitektur Sistem & Alur Data](#3-arsitektur-sistem--alur-data)
-4. [Struktur Data & Skema TypeScript](#4-struktur-data--skema-typescript)
-5. [Spesifikasi Fitur Utama (Deep Dive)](#5-spesifikasi-fitur-utama-deep-dive)
-   - [5.1 Antarmuka Chat & Local NLP Parser](#51-antarmuka-chat--local-nlp-parser)
-   - [5.2 Pemindai Kamera Langsung (In-Memory MediaDevices)](#52-pemindai-kamera-langsung-in-memory-mediadevices)
-   - [5.3 Mesin Offline OCR (Tesseract.js) & Heuristik Struk](#53-mesin-offline-ocr-tesseractjs--heuristik-struk)
-   - [5.4 Dasbor Analisis Keuangan & Visualisasi Interaktif](#54-dasbor-analisis-keuangan--visualisasi-interaktif)
-   - [5.5 Generator Laporan PDF Profesional (jsPDF Vector Engine)](#55-generator-laporan-pdf-profesional-jspdf-vector-engine)
-   - [5.6 Integrasi Google Sheets & Backend Google Apps Script](#56-integrasi-google-sheets--backend-google-apps-script)
-   - [5.7 Integrasi Asisten Bot Telegram](#57-integrasi-asisten-bot-telegram)
-   - [5.8 Fitur Unduh Aplikasi (Android & Desktop via Google Drive)](#58-fitur-unduh-aplikasi-android--desktop-via-google-drive)
-6. [Spesifikasi Desain & Antarmuka Pengguna (UI/UX)](#6-spesifikasi-desain--antarmuka-pengguna-uiux)
-7. [Panduan Rekonstruksi Langkah-demi-Langkah (Build 100% Identik)](#7-panduan-rekonstruksi-langkah-demi-langkah-build-100-identik)
-8. [Matriks Penanganan Error & Kasus Tepi (Edge Cases)](#8-matriks-penanganan-error--kasus-tepi-edge-cases)
-9. [Panduan Deployment & Konfigurasi Lingkungan](#9-panduan-deployment--konfigurasi-lingkungan)
-10. [Panduan Pengaturan Tautan Google Drive & Modifikasi di GitHub](#10-panduan-pengaturan-tautan-google-drive--modifikasi-di-github)
-    - [10.1 Cara Memasukkan Link Google Drive Sendiri (Android & Desktop)](#101-cara-memasukkan-link-google-drive-sendiri-android--desktop)
-    - [10.2 Cara Menghapus Kartu Unduh Jika Tidak Diinginkan di Website](#102-cara-menghapus-kartu-unduh-jika-tidak-diinginkan-di-website)
+> **Diciptakan & Dikembangkan oleh:** **`faiz_fahmi_id`** (Faiz Fahmi Id)  
+> **Tahun Rilis:** 2026  
+> **Status:** Siap Produksi (Production Ready) • 100% Bebas Biaya API (Zero-Cost AI) • Privasi Terjamin (Privacy-First)
 
 ---
 
-## 1. Ringkasan Eksekutif & Visi Produk
+## 🌟 Ringkasan Produk
 
-### 1.1 Latar Belakang & Masalah
-Sebagian besar aplikasi pencatat keuangan konvensional mengharuskan pengguna mengisi formulir multi-langkah yang rumit (memilih tanggal, memilih dropdown kategori yang panjang, mengisi kolom jumlah, dan mengetik keterangan). Gesekan (*friction*) ini menyebabkan pengguna malas mencatat pengeluaran harian mereka. Selain itu, banyak aplikasi bergantung pada API AI berbayar atau server pihak ketiga yang mengorbankan privasi data finansial pengguna.
+**FahKeu** (*Faiz Keuangan*) adalah platform asisten pencatatan dan manajemen keuangan pribadi modern yang memadukan kenyamanan percakapan alami (*chat-driven UX*), pemindaian struk belanja otomatis via kamera *in-memory* tanpa membebani penyimpanan perangkat, analitik visual interaktif, ekspor laporan PDF berstandar perbankan, serta sinkronisasi awan (*cloud sync*) dua arah dengan Google Sheets dan Bot Telegram.
 
-### 1.2 Solusi FahKeu
-**FahKeu** menghadirkan pengalaman pencatatan keuangan berkecepatan tinggi melalui antarmuka percakapan interaktif (*Chat UI*) bergaya aplikasi pesan instan (WhatsApp/Telegram/Instagram). FahKeu memproses bahasa alami Bahasa Indonesia secara instan langsung di peramban (*client-side NLP*) tanpa biaya API, memungkinkan pemindaian struk berbasis kamera in-memory tanpa membebani penyimpanan perangkat, serta menyediakan analitik visual, ekspor PDF kustom, dan sinkronisasi opsional ke Google Sheets & Bot Telegram.
-
-### 1.3 Prinsip Utama Desain Sistem
-1. **Zero-Cost & Privacy-First:** 100% fungsi inti (NLP parser, OCR, kalkulasi analitik, dan generator PDF) berjalan sepenuhnya di peramban klien tanpa wajib langganan backend atau API AI berbayar.
-2. **Kamera In-Memory (Storage-Saving):** Pemotretan struk diproses di memori RAM dan langsung diubah menjadi transaksi tanpa disimpan di galeri file ponsel.
-3. **Dual-Platform Access:** Sinkronisasi dua arah (*two-way sync*) ke Google Sheets dan Bot Telegram pribadi pengguna.
-4. **Resilience (Offline-First):** Tetap berfungsi optimal saat jaringan internet terputus menggunakan `localStorage` dan antrean aksi offline (*offline action queue*).
+Didesain secara khusus oleh **faiz_fahmi_id** untuk mengatasi rasa malas mencatat keuangan harian yang diakibatkan oleh formulir berbelit-belit pada aplikasi finansial konvensional.
 
 ---
 
-## 2. Persona Pengguna & Skenario Penggunaan
+## 🏆 Daftar Fitur-Fitur Unggulan FahKeu (Feature Showcase)
 
-| Persona | Kebutuhan Utama | Fitur FahKeu yang Digunakan |
+Berikut adalah rincian mendalam mengenai 10 fitur unggulan utama yang dibangun di dalam **FahKeu by faiz_fahmi_id**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          FITUR-FITUR UNGGULAN FAHKEU                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  1. 💬 Interaktif Chat UI & Natural Language Parser (100% Client-Side NLP)      │
+│  2. 📷 In-Memory Camera Scanner (Bebas Memori & Galeri Bersih)                 │
+│  3. 🔍 Offline Struk OCR (Tesseract.js) & Auto-Categorization Pintar            │
+│  4. 📊 Dashboard Analitik Interaktif & Grafik Tren Real-Time                    │
+│  5. 📄 Generator Laporan PDF Vektor Profesional (jsPDF High-Res Engine)        │
+│  6. ☁️ Sinkronisasi Dua Arah Google Sheets (Auto-Table Creation)               │
+│  7. 🤖 Asisten Keuangan Bot Telegram 24/7 (Multi-Platform Webhook)             │
+│  8. 🎨 3 Pilihan Tema Estetik (Light, Dark, & Luxury Gold)                      │
+│  9. ⚡ Offline-First & Zero-Loss Data Persistence (PWA Ready)                   │
+│  10. 📲 Portal Unduhan Multi-Platform (Android APK & Desktop via Google Drive) │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 1. 💬 Chat-Driven Interface & NLP Parser Cerdas (Tanpa Biaya API)
+* **Pencatatan Secepat Mengetik Pesan:** Catat pengeluaran dan pemasukan seperti mengirim chat ke teman di WhatsApp atau Telegram.
+* **100% Pemrosesan Klien (Zero-Cost AI):** Menggunakan pustaka *heuristic regex parser* karya **faiz_fahmi_id** yang berjalan langsung di browser tanpa ketergantungan API LLM berbayar (OpenAI/Gemini/Claude).
+* **Fleksibilitas Satuan Mata Uang:** Mengenali berbagai variasi penulisan bahasa Indonesia:
+  * Singkatan: `15k`, `50rb`, `1.5jt`, `2juta`, `25.000`, `Rp 150.000`
+  * Operasi Pengeluaran: *"makan siang 25k"*, *"bensin motor 20rb"*, *"kopi janji jiwa 18k"*
+  * Operasi Pemasukan: *"gaji masuk 5jt"*, *"dapat bonus 500k"*, *"terima transfer 200rb"*
+  * Cek Saldo: *"saldo"*, *"sisa saldo"*, *"cek uang"*
+  * Rekap Laporan: *"download rekap"*, *"unduh pdf"*, *"laporan bulanan"*
+  * Manajemen Obrolan: *"hapus chat"*, *"bersihkan layar"*
+* **Suggestion Chips Cepat:** Dilengkapi tombol pintas dinamis di atas kolom chat untuk mencatat transaksi umum (Kopi, Makan Siang, Bensin, Gaji) hanya dengan 1 sentuhan.
+
+---
+
+### 2. 📷 Pemindai Kamera Langsung In-Memory (Zero Storage Burden)
+* **Kamera Terintegrasi (*In-App Viewport*):** Mengakses perangkat keras kamera secara langsung melalui HTML5 `navigator.mediaDevices.getUserMedia` tanpa perlu membuka aplikasi kamera eksternal ponsel.
+* **Hemat Memori HP (Zero Storage Overhead):** Citra foto struk belanja diproses langsung di memori RAM peramban (*HTML5 Canvas Bitmap*) dan langsung diekstraksi. **Foto tidak disimpan di memori internal/galeri perangkat**, menjaga galeri ponsel pengguna tetap bersih dan tidak penuh oleh tumpukan foto struk bekas.
+* **Dukungan Kamera Depan & Belakang:** Tombol peralihan kamera (*camera flip*) instan antara lensa belakang (*environment*) dan depan (*user*), serta pengaman izin akses (*permission recovery*).
+
+---
+
+### 3. 🔍 Offline Struk OCR (Tesseract.js) & Auto-Categorization
+* **Pengenalan Karakter Optik di Sisi Klien:** Membaca teks nota/struk belanja secara offline menggunakan *WebAssembly worker* Tesseract.js tanpa mengirim data sensitif belanjaan pengguna ke server asing.
+* **Algoritma Ekstraksi Nominal Pintar:**
+  * Memfilter deretan tanggal, nomor nota/faktur, dan nomor kasir agar tidak salah terdeteksi sebagai harga.
+  * Mengisolasi kata kunci penentu seperti `TOTAL`, `GRAND TOTAL`, `JUMLAH`, `SUBTOTAL`, `TUNAI`, `BAYAR`.
+* **Deteksi Otomatis 8 Kategori Finansial:**
+  * 🍔 **Makanan & Minuman:** Resto, Bakso, Kopi, Mie, Nasi, Cafe, Teh, Warung.
+  * 🚗 **Transportasi:** Bensin, Pertamina, Shell, Parkir, Tol, Gojek, Grab.
+  * 💡 **Tagihan & Utilitas:** PLN, Token, Listrik, PDAM, Pulsa, Kuota, WiFi, Internet.
+  * 🛍️ **Belanja & Pribadi:** Indomaret, Alfamart, Supermarket, Mall, Pakaian.
+  * 🎬 **Hiburan & Liburan:** Bioskop, Game, Liburan, Netflix, Spotify.
+  * 💊 **Kesehatan:** Apotek, Obat, Klinik, Dokter, Rumah Sakit.
+  * 🎓 **Pendidikan & Kerja:** Kursus, Buku, Kuliah, Alat Tulis, Kantor.
+  * 📦 **Lain-lain:** Kategori fleksibel untuk pengeluaran khusus lainnya.
+
+---
+
+### 4. 📊 Dashboard Analitik Interaktif & Visualisasi Multi-Dimensi
+* **Metrik Utama (KPI Cards):**
+  * Sisa Saldo Kumulatif (*Total Balance*)
+  * Total Pemasukan (*Total Income*)
+  * Total Pengeluaran (*Total Expense*)
+  * Persentase Arus Kas (*Savings Ratio*)
+* **Grafik Tren Arus Kas Dinamis (Recharts):** Visualisasi grafik area/batang yang responsif menampilkan fluktuasi harian dan mingguan pemasukan vs pengeluaran.
+* **Diagram Donat Distribusi Pengeluaran:** Memecah porsi pengeluaran berdasarkan 8 kategori dengan kode warna modern untuk mempermudah evaluasi anggaran (*budget evaluation*).
+* **Filter Rentang Waktu Komprehensif:** Pilihan filter 1-klik untuk **Semua**, **Minggu Ini (7 Hari Terakhir)**, **Bulan Ini (30 Hari Terakhir)**, dan **Tahun Ini**.
+* **Manajemen Transaksi Lengkap:** Tabel riwayat mutasi dengan pencarian kata kunci, pengurutan, pengeditan modal instan, dan penghapusan transaksi dengan konfirmasi aman.
+
+---
+
+### 5. 📄 Generator Laporan PDF Vektor Profesional (jsPDF High-Res)
+* **Desain Eksklusif Standar Perbankan:** Dokumen berukuran A4 yang dirancang secara matematis menggunakan *vector graphics rendering* murni (garis tajam, tipografi Helvetica terukur, dan palet warna korporat).
+* **Fitur Dokumen PDF Otomatis:**
+  * Header Laporan Resmi & Tanggal Cetak Waktu Nyata (WIB).
+  * Kartu Ringkasan Keuangan (Saldo Akhir, Total Pemasukan, Total Pengeluaran).
+  * Tabel Rincian Transaksi Lengkap (Nomor, Waktu, Jenis Arus, Kategori, Deskripsi, Nominal).
+  * *Dynamic Multi-Page Overflow Handler:* Otomatis membagi halaman baru jika transaksi melebihi 1 halaman, lengkap dengan pengulangan header tabel di tiap halaman.
+  * Footer Penomoran Otomatis (*"Halaman X dari Y"*).
+  * Tanda Tangan Lisensi Otomatis: **`Laporan Keuangan Otomatis FahKeu — by Faiz_Fahmi_Id since 2026`**.
+
+---
+
+### 6. ☁️ Sinkronisasi Dua Arah Google Sheets (Auto-Table Creation)
+* **Spreadsheet sebagai Database Mandiri:** Data tersimpan aman di akun Google Drive pribadi pengguna sendiri tanpa risiko kebocoran data.
+* **Otomasi Pembuatan Kolom:** Pengguna **tidak perlu membuat format tabel manual**. Saat pertama kali dihubungkan, Google Apps Script (`Code.gs`) otomatis membuat tab sheet `"Transactions"` lengkap dengan styling header dan format angka nominal (`#,##0`).
+* **Konektivitas Tahan Banting (Anti-CORS):**
+  * Protokol utama: `POST` payload `text/plain` tanpa preflight CORS.
+  * Protokol cadangan (*Auto-Fallback*): `GET` query string otomatis aktif jika koneksi jaringan klien mengalami blokir browser.
+* **Fungsi Pengujian Mandiri (`testSheet`):** Disediakan tombol uji koneksi langsung di editor Google Apps Script yang aman dari error `parameter undefined`.
+
+---
+
+### 7. 🤖 Asisten Keuangan Bot Telegram 24/7 (Multi-Platform Webhook)
+* **Catat Keuangan saat Mobilitas Tinggi:** Cukup buka Telegram dari smartphone atau smartwatch Anda dan ketik pengeluaran secara langsung.
+* **Kamera Telegram OCR:** Kirim foto struk belanja langsung ke ruang obrolan Telegram. Bot akan memproses OCR dan mencatat transaksi ke Google Sheets secara otomatis.
+* **Perintah Cepat Telegram:**
+  * `/start` atau `help` — Panduan lengkap penggunaan bot.
+  * `sisa saldo` — Cek total tabungan & mutasi saat ini.
+  * `download rekap` — Bot mengirimkan tautan unduhan rekap PDF langsung ke obrolan Telegram.
+* **Pendaftaran Webhook 1-Klik:** Tombol pendaftaran webhook otomatis di panel Pengaturan FahKeu tanpa perlu menulis curl manual.
+
+---
+
+### 8. 🎨 3 Pilihan Tema Estetik Modern
+* ☀️ **Light Mode (Mode Bersih & Segar):** Desain bernuansa slate-putih yang nyaman di bawah sinar matahari dengan rasio kontras tinggi standar WCAG AA.
+* 🌙 **Dark Mode (Mode Malam Elegan):** Latar belakang *deep slate* (`#0f172a` / `#020617`) yang ramah mata dan menghemat konsumsi baterai layar OLED/AMOLED.
+* 👑 **Luxury Gold (Tema Eksklusif Sultan):** Perpaduan mewah antara latar gelap pekat dan aksen emas berkilau (*amber-400 / gold*), memberikan sensasi premium kelas atas bagi pengguna setia FahKeu.
+
+---
+
+### 9. ⚡ Offline-First & Zero-Loss Data Persistence
+* **Bekerja Tanpa Sinyal:** Seluruh data transaksi dan percakapan disimpan secara instan di `localStorage` peramban.
+* **Antrean Aksi Offline (*Offline Queue*):** Jika transaksi dicatat saat internet terputus, mutasi disimpan di antrean lokal dan otomatis disinkronkan ke Google Sheets ketika jaringan internet terhubung kembali.
+* **PWA Installable:** Dapat diinstal ke layar utama (*Add to Home Screen*) pada Android, iPhone (iOS), macOS, dan Windows layaknya aplikasi *native*.
+
+---
+
+### 10. 📲 Portal Unduhan Multi-Platform (Android APK & Desktop)
+* **Pusat Distribusi Mandiri:** Kartu unduhan terintegrasi di tab Pengaturan yang memungkinkan pemilik aplikasi membagikan berkas APK Android dan Installer Desktop (Windows/Mac) langsung melalui tautan Google Drive pribadi.
+* **Mudah Dikonfigurasi:** Tautan unduhan dapat diperbarui kapan saja hanya dengan mengubah variabel di bagian atas file `SettingsPanel.tsx`.
+
+---
+
+## 🏛️ Arsitektur Sistem & Aliran Data
+
+Berikut adalah diagram alur integrasi menyeluruh aplikasi **FahKeu**:
+
+```
+                                    ┌────────────────────────────────────┐
+                                    │          PENGGUNA / USER           │
+                                    └──────────────┬─────────────────────┘
+                                                   │
+                         ┌─────────────────────────┴─────────────────────────┐
+                         ▼                                                   ▼
+         ┌───────────────────────────────┐                   ┌───────────────────────────────┐
+         │     APLIKASI WEB FAHKEU       │                   │         BOT TELEGRAM          │
+         │  (React 19 + Tailwind CSS)    │                   │   (@YourPersonalFinanceBot)   │
+         └───────────────┬───────────────┘                   └───────────────┬───────────────┘
+                         │                                                   │
+          ┌──────────────┴──────────────┐                                    │
+          ▼                             ▼                                    │
+ ┌─────────────────┐           ┌─────────────────┐                           │
+ │ Local NLP Engine│           │ In-Memory OCR   │                           │
+ │ (Bebas Biaya)   │           │ (Tesseract.js)  │                           │
+ └────────┬────────┘           └────────┬────────┘                           │
+          │                             │                                    │
+          └──────────────┬──────────────┘                                    │
+                         ▼                                                   │
+           ┌───────────────────────────┐                                     │
+           │  Penyimpanan Lokal Klien  │                                     │
+           │  (Browser LocalStorage)   │                                     │
+           └─────────────┬─────────────┘                                     │
+                         │ (Sinkronisasi Otomatis)                           │
+                         ▼                                                   │
+         ┌────────────────────────────────────────────────────────┐          │
+         │              GOOGLE APPS SCRIPT (Code.gs)              │◄─────────┘
+         │      (Web App Endpoint & Webhook Serverless)           │
+         └───────────────────────┬────────────────────────────────┘
+                                 │
+                                 ▼
+         ┌────────────────────────────────────────────────────────┐
+         │               GOOGLE SPREADSHEET PRIBADI               │
+         │       (Database Sheet: 'Transactions' Auto-Created)    │
+         └────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛠️ Tumpukan Teknologi (Tech Stack)
+
+| Lapisan | Teknologi yang Digunakan | Penjelasan |
 |---|---|---|
-| **Mahasiswa / Freelancer** | Mencatat jajan harian, bensin, dan uang makan secara cepat tanpa repot membuka formulir. | Chat NLP (*"bakso 15k"*, *"kopi 20rb"*), Suggestion Chips, Ringkasan Saldo Cepat. |
-| **Ibu Rumah Tangga / Pengelola Belanja** | Merekam tumpukan struk belanja bulanan dari supermarket/minimarket. | In-App Camera OCR Scanner, Auto Categorization, Rekap Bulanan PDF. |
-| **Pengguna Telegram Aktif** | Mencatat transaksi saat bepergian langsung dari aplikasi Telegram tanpa membuka browser. | Integrasi Bot Telegram via Webhook Google Apps Script. |
-| **Pecinta Spreadsheet** | Ingin data keuangannya tersimpan rapi di Google Sheets untuk backup dan analisis lanjutan. | Google Sheets Cloud Sync & Ekspor PDF Otomatis. |
+| **Frontend Framework** | React 19 + TypeScript | Komponen modular dengan pengetikan statis ketat (*type safety*). |
+| **Styling & Theme** | Tailwind CSS v4 | Antarmuka adaptif, responsive mobile-first, dan transisi mulus. |
+| **Ikonografi** | Lucide React | Koleksi ikon vektor modern dan konsisten. |
+| **Mesin Grafik / Charts** | Recharts & Lucide | Diagram area finansial responsif dan donat distribusi kategori. |
+| **Offline OCR Scanner** | Tesseract.js (WASM) | Ekstraksi teks nota langsung di memori browser tanpa server. |
+| **Mesin Laporan PDF** | jsPDF | Pembuatan dokumen vektor A4 resolusi tinggi di peramban. |
+| **Database Cloud** | Google Sheets + Google Apps Script | Penyimpanan basis data cloud gratis, aman, dan dapat diakses mandiri. |
+| **Integrasi Chatbot** | Telegram Bot API | Notifikasi dan pencatatan transaksi dua arah via pesan Telegram. |
+| **Bundler & Tooling** | Vite + ESBuild | Kompilasi ultra-cepat dengan arsitektur SPA modern. |
 
 ---
 
-## 3. Arsitektur Sistem & Alur Data
+## 📁 Struktur Direktori Proyek
 
-```
-               ┌────────────────────────────────────────────────────────┐
-               │                     KLIEN / BROWSER                    │
-               │  (React 19 + TypeScript + Vite + Tailwind CSS + PWA)  │
-               └───────────┬────────────────────────────────┬───────────┘
-                           │                                │
-            ┌──────────────┴──────────────┐  ┌──────────────┴──────────────┐
-            ▼                             ▼  ▼                             ▼
-   ┌─────────────────┐           ┌─────────────────┐              ┌─────────────────┐
-   │ Local NLP Parser│           │ Tesseract.js    │              │ jsPDF Generator │
-   │ (Regex + Suffix)│           │ (In-Memory OCR) │              │ (Vector Engine) │
-   └────────┬────────┘           └────────┬────────┘              └────────┬────────┘
-            │                             │                                │
-            └──────────────┬──────────────┘                                │
-                           ▼                                               │
-             ┌───────────────────────────┐                                 │
-             │   State & LocalStorage    │◄────────────────────────────────┘
-             │ (Transactions & Messages) │
-             └─────────────┬─────────────┘
-                           │ (Jika Cloud Storage Aktif)
-                           ▼
-          ┌───────────────────────────────────┐
-          │     Google Apps Script Webhook    │
-          │             (Code.gs)             │
-          └─────────┬───────────────┬─────────┘
-                    │               │
-                    ▼               ▼
-          ┌───────────────────┐   ┌──────────────────────────┐
-          │   Google Sheets   │   │ Telegram Bot API Webhook │
-          │ (Database Utama)  │   │  (Catat via Telegram)    │
-          └───────────────────┘   └──────────────────────────┘
-```
-
----
-
-## 4. Struktur Data & Skema TypeScript
-
-Semua tipe data global didefinisikan secara modular di `/src/types.ts`:
-
-```typescript
-// 1. Skema Transaksi Finansial
-export interface Transaction {
-  id: string;                      // Format: 'tx_' + timestamp + '_' + randomString
-  date: string;                    // ISO 8601 String (e.g. '2026-06-28T14:20:00.000Z')
-  type: 'pemasukan' | 'pengeluaran';
-  amount: number;                  // Integer positif (e.g. 150000)
-  description: string;             // Nama transaksi (e.g. 'Beli Bakso Urat')
-  category: string;                // Kategori resmi (e.g. 'Makanan & Minuman')
-  source: 'web' | 'telegram';      // Asal pencatatan transaksi
-}
-
-// 2. Skema Pesan Chat Interaktif
-export interface Message {
-  id: string;                      // Format: 'msg_' + timestamp
-  sender: 'user' | 'bot';
-  text: string;                    // Teks konten pesan (dukung format Markdown sederhana)
-  timestamp: string;               // Jam:Menit (e.g. '14:25')
-  parsedTransaction?: {            // Metadata transaksi jika pesan memicu pencatatan
-    type: 'pemasukan' | 'pengeluaran';
-    amount: number;
-    description: string;
-    category: string;
-    feedback: string;
-    balanceAfter: number;
-  };
-  isPdfSelector?: boolean;         // Menampilkan selector unduh PDF langsung di chat
-  pdfDownloadUrl?: string;
-  pdfPeriod?: string;
-}
-
-// 3. Konfigurasi Pengaturan & Sinkronisasi
-export interface AppSettings {
-  googleSheetUrl: string;          // Google Apps Script Web App Deployment URL
-  telegramBotToken: string;        // Token HTTP BotFather Telegram
-  telegramChatId: string;          // ID Obrolan / User ID Telegram Pengguna
-  useCloudStorage: boolean;        // Saklar aktivasi sinkronisasi cloud
-}
-
-// 4. Antrean Aksi Offline (Queue)
-export interface OfflineAction {
-  id: string;
-  action: 'add' | 'delete' | 'clear';
-  transaction?: Transaction;
-  transactionId?: string;
-}
-
-// 5. Konfigurasi Kategori & Palet Warna
-export interface CategoryConfig {
-  name: string;
-  color: string;                   // Kode warna HEX (e.g. '#10b981')
-  keywords: string[];              // Kata kunci pemicu pencocokan otomatis
-  icon: string;                    // Nama komponen icon Lucide-React
-}
-```
-
----
-
-## 5. Spesifikasi Fitur Utama (Deep Dive)
-
-### 5.1 Antarmuka Chat & Local NLP Parser
-
-#### Algoritma Pemrosesan Bahasa Alami (`/src/utils/parser.ts`)
-Parser mengeksekusi 4 tahapan pencocokan berurutan:
-
-1. **Deteksi Tipe Transaksi (`type`):**
-   - **Prefix Sign:** Teks berawalan `+` otomatis `pemasukan`, berawalan `-` otomatis `pengeluaran`.
-   - **Kata Kunci Pemasukan:** `gaji`, `masuk`, `terima`, `pemasukan`, `transfer`, `freelance`, `sampingan`, `bonus`, `untung`, `dapat`, `cuan`, `laba`, `plus`.
-   - **Kata Kunci Pengeluaran:** `pengeluaran`, `beli`, `bayar`, `untuk`, `makan`, `bakso`, `kopi`, `bensin`, `pulsa`, `listrik`, `belanja`, `jajan`, `ongkir`, `kos`, `tiket`, `keluar`, `minum`, `gojek`, `grab`, `shopee`, `tokopedia`, `minus`.
-   - **Resolusi Konflik:** Jika kedua tipe kata kunci ada dalam satu kalimat, posisi kata kunci pertama yang muncul menentukan tipe.
-
-2. **Ekstraksi Nominal & Akhiran Suffix:**
-   - **Regex Pattern:** `/(?:rp\.?\s*)?(\d+[\d.,]*)\s*(juta|miliar|jt|ribu|rb|k|m|r)?\b/gi`
-   - **Aturan Konversi Suffix:**
-     - `k`, `rb`, `ribu`, `r` $\rightarrow \times 1.000$
-     - `jt`, `juta`, `m` $\rightarrow \times 1.000.000$
-     - `miliar` $\rightarrow \times 1.000.000.000$
-   - **Penanganan Desimal & Pemisah Ribuan Indonesia:**
-     - Nilai ber-suffix seperti `1.5jt` atau `2,5k` diubah titik/komanya menjadi desimal numerik ($1.5 \times 1.000.000 = 1.500.000$).
-     - Nilai tanpa suffix: jika memiliki lebih dari 1 tanda titik (misal `1.000.000`) atau format ribuan standar, seluruh titik dihilangkan.
-
-3. **Pembersihan Deskripsi (`description`):**
-   - Angka nominal, simbol uang, serta kata kunci tipe transaksi dihapus dari kalimat mentah.
-   - Karakter sisa dibersihkan dari spasi ganda dan dikapitalisasi dengan rapi.
-
-4. **Klasifikasi Kategori Otomatis (`category`):**
-   - Mencocokkan kata kunci deskripsi terhadap 9 kategori standar:
-     1. *Makanan & Minuman* (makan, minum, nasi, kopi, cafe, resto, bakso, martabak, indomaret, dll.)
-     2. *Transportasi* (bensin, pertalite, pertamax, gojek, grab, tarif, parkir, kereta, busway, toll)
-     3. *Belanja & Pribadi* (baju, pakaian, sepatu, celana, skin care, shopee, lazada, tokopedia, mall)
-     4. *Tagihan & Utilitas* (listrik, pln, pdam, air, wifi, indihome, kuota, pulsa, kosan, kontrakan)
-     5. *Gaji & Pendapatan Tetap* (gaji, salary, honor, thr, upah, bulanan)
-     6. *Freelance & Sampingan* (proyek, project, freelance, client, komisi, dividen, royalti)
-     7. *Kesehatan & Medis* (obat, apotek, dokter, rumah sakit, klinik, vitamin, periksa)
-     8. *Hiburan & Liburan* (bioskop, tiket, bioskop, nonton, netflix, spotify, game, staycation)
-     9. *Lain-lain* (Kategori *fallback* default)
-
----
-
-### 5.2 Pemindai Kamera Langsung (In-Memory MediaDevices)
-
-#### Fitur & Arsitektur
-- **In-Memory Capture:** Tidak menggunakan `<input type="file" capture>` default browser yang memaksa sistem operasi menyimpan foto ke galeri perangkat.
-- **Kamera Kustom Berbasis `navigator.mediaDevices.getUserMedia`:**
-  - Mengalirkan *live stream* video beresolusi optimal ($1280 \times 720$).
-  - Menyediakan tombol pembalik kamera (*Camera Flip Toggle*): beralih antara `environment` (kamera belakang) dan `user` (kamera depan).
-  - Dilengkapi *Framing Overlay Box* berpemandu sudut hijau dengan rasio struk proporsional.
-  - Saat tombol *shutter* ditekan, frame aktif dirender ke elemen `<canvas>`, dikonversi menjadi `Blob` format JPEG kualitas 0.85, lalu langsung dioperasikan sebagai objek `File` sementara di memori RAM.
-  - Setelah pemindaian selesai, stream kamera dihentikan (`track.stop()`), menjamin **zero-footprint** pada memori penyimpanan fisik perangkat.
-
----
-
-### 5.3 Mesin Offline OCR (Tesseract.js) & Heuristik Struk
-
-1. **Inisialisasi Worker Tesseract.js:**
-   - Memanfaatkan library `tesseract.js` yang dikompilasi ke WebAssembly.
-   - Menjalankan pengenalan teks bahasa Indonesia (`ind`) dan Inggris (`eng`) secara offline.
-   - Memberikan indikator progres pengenalan teks secara real-time ($0\% - 100\%$).
-
-2. **Mesin Heuristik Struk (`/src/utils/receiptParser.ts`):**
-   - **Pencarian Total:** Mencari baris teks yang memuat kata kunci: `TOTAL`, `GRAND TOTAL`, `JUMLAH`, `TAGIHAN`, `BAYAR`, `TUNAI`, `CASH`, `NETTO`.
-   - **Filter Validitas Nominal:** Mengabaikan angka kembalian (*Change / Kembali*), nomor telepon kasir, atau nomor seri invoice struk.
-   - **Pencarian Nama Toko/Deskripsi:** Mengambil baris teratas struk sebagai nama merchant/toko (misal: *"INDOMARET"*, *"ALFAMART"*, *"SUPERINDO"*).
-
-3. **Dialog Konfirmasi Interaktif:**
-   - Hasil deteksi OCR (Nominal, Deskripsi, Kategori) ditampilkan dalam kartu konfirmasi sebelum dimasukkan ke dalam buku kas, memungkinkan pengguna mengoreksi kesalahan baca secara manual.
-
----
-
-### 5.4 Dasbor Analisis Keuangan & Visualisasi Interaktif
-
-#### 1. Kartu Metrik Ringkasan (Summary Cards)
-- **Total Pemasukan:** Akumulasi seluruh nominal bertipe `pemasukan` pada periode terpilih.
-- **Total Pengeluaran:** Akumulasi seluruh nominal bertipe `pengeluaran` pada periode terpilih.
-- **Saldo Bersih (Net Cash Flow):** Total Pemasukan dikurangi Total Pengeluaran.
-- **Rasio Tabungan / Cashflow:** Persentase efisiensi tabungan $\left(\frac{\text{Pemasukan} - \text{Pengeluaran}}{\text{Pemasukan}} \times 100\%\right)$.
-
-#### 2. Visualisasi Grafik Recharts (D3-Powered)
-- **Grafik Garis Tren Saldo Harian (`LineChart`):** Menampilkan pergerakan saldo kumulatif harian dengan kurva halus (*Monotone*), titik data interaktif, dan *Custom Glassmorphism Tooltip*.
-- **Grafik Donat Kontribusi Kategori (`PieChart`):** Memetakan distribusi pengeluaran per kategori dengan palet warna dinamis, label persentase, dan *hover effect*.
-
-#### 3. Filter Rentang Waktu Komprehensif
-- **Hari Ini (`today`):** Transaksi pada tanggal berjalan.
-- **7 Hari Terakhir (`7days`):** Transaksi dalam 7 hari terakhir.
-- **Bulan Ini (`month`):** Transaksi sejak tanggal 1 pada bulan berjalan.
-- **Tahun Ini (`year`):** Transaksi dari 1 Januari pada tahun berjalan.
-- **Rentang Kustom (`custom`):** Pemilihan tanggal awal (*Start Date*) dan tanggal akhir (*End Date*) secara bebas.
-
-#### 4. Buku Kas & Manajemen Transaksi
-- Pencarian cerdas berbasis teks (pencocokan nama & kategori).
-- Filter khusus: Semua, Hanya Pemasukan, Hanya Pengeluaran.
-- Pengurutan dinamis berdasarkan tanggal terbaru atau nominal terbesar.
-- Opsi penghapusan transaksi satuan serta pengosongan seluruh data dengan modal konfirmasi keamanan ganda.
-
----
-
-### 5.5 Generator Laporan PDF Profesional (jsPDF Vector Engine)
-
-File generator `/src/utils/pdfGenerator.ts` mengimplementasikan pembuatan dokumen PDF berstandar akuntansi:
-
-1. **Geometri & Tata Letak:**
-   - Ukuran kertas A4 ($210\text{ mm} \times 297\text{ mm}$) dengan margin seimbang $14\text{ mm}$.
-   - Kop Laporan: Badge logo `FK` berwarna emerald, tipografi tegas `FahKeu`, metadata periode rekap, dan tanggal pencetakan berstempel WIB.
-
-2. **Ringkasan Finansial Matriks (Summary Grid):**
-   - 3 Kartu statistik horizontal: Total Pemasukan (Emerald), Total Pengeluaran (Rose), dan Saldo Akhir (Slate/Emerald).
-
-3. **Tabel Transaksi Multi-Halaman Dinamis:**
-   - **Kalkulasi Overflow Cerdas:** Memeriksa batas tinggi halaman (`pageHeight - 15mm`). Jika baris transaksi melebihi batas, halaman baru ditambahkan secara otomatis.
-   - **Repeating Table Header:** Setiap halaman baru secara otomatis menggambar ulang kepala tabel transaksi lengkap dengan styling latar belakang gelap `#0f172a`.
-   - **Multi-line Text Wrapping:** Kolom kategori dan deskripsi yang panjang dipotong rapi menggunakan `doc.splitTextToSize`, mencegah teks terpotong atau menimpa kolom lain.
-   - **Format Angka Rupiah Bersih:** Penataan teks rata kanan (*right-aligned*) untuk kolom nominal rupiah.
-
-4. **Footer Dokumen Resmi:**
-   - Garis pemisah tipis di bagian bawah halaman.
-   - Watermark teks: *"Laporan Keuangan Otomatis FahKeu — by Faiz_Fahmi_Id since 2026"*.
-   - Penomoran halaman otomatis (*"Halaman X"*).
-
----
-
-### 5.6 Integrasi Google Sheets & Backend Google Apps Script
-
-Skrip backend Google Apps Script mandiri (`/src/utils/code.gs.ts`) menyediakan layanan API tanpa server (*serverless endpoint*):
-
-1. **`doGet(e)` - Sinkronisasi & Penarikan Data:**
-   - Parameter `action=get_data`: Membaca seluruh baris dari sheet `Transaksi`, mengonversinya ke format JSON array, dan mengembalikannya ke aplikasi web.
-   - Parameter `action=get_pdf`: Menghasilkan dokumen PDF langsung dari sisi Google Apps Script dan mengirimkannya kembali dalam bentuk stream base64.
-
-2. **`doPost(e)` - Penyimpanan Transaksi & Webhook Telegram:**
-   - Menerima payload transaksi baru dari aplikasi web atau pesan masuk dari webhook Telegram.
-   - Menambahkan baris baru ke sheet: `[ID, Tanggal ISO, Waktu, Tipe, Kategori, Deskripsi, Nominal, Saldo, Sumber]`.
-   - Melakukan formatting otomatis pada sel spreadsheet (format mata uang IDR, penebalan teks header, dan penyesuaian lebar kolom otomatis).
-
----
-
-### 5.7 Integrasi Asisten Bot Telegram
-
-Aplikasi mendukung pencatatan langsung dari aplikasi Telegram:
-1. Pengguna membuat bot via `@BotFather` di Telegram dan mendapatkan Token API.
-2. Webhook didaftarkan secara otomatis ke URL Google Apps Script.
-3. **Perintah Telegram yang Didukung:**
-   - `/start` atau `/help`: Panduan penggunaan bot.
-   - `/saldo`: Menampilkan total saldo, pemasukan, dan pengeluaran terkini.
-   - `/rekap`: Menampilkan rekap ringkas 5 transaksi terakhir.
-   - `/pdf`: Mengirimkan berkas laporan PDF langsung ke obrolan Telegram.
-   - *Pesan teks bebas:* Memproses bahasa alami (misal: *"beli bensin 30rb"*) dan langsung merekamnya ke Google Sheets.
-
----
-
-### 5.8 Fitur Unduh Aplikasi (Android & Desktop via Google Drive)
-
-FahKeu menyediakan antarmuka unduhan multi-platform yang terintegrasi di halaman Pengaturan (*Settings*):
-1. **📱 Unduh Android (APK):**
-   - Tombol unduh berikon smartphone yang mengarahkan pengguna ke tautan Google Drive file `.apk` instalasi Android.
-   - Konstanta tautan: `DOWNLOAD_LINK_ANDROID` di `/src/components/SettingsPanel.tsx`.
-2. **💻 Unduh Desktop (Windows / PC):**
-   - Tombol unduh berikon laptop yang mengarahkan pengguna ke tautan Google Drive file `.exe` / installer desktop PC.
-   - Konstanta tautan: `DOWNLOAD_LINK_DESKTOP` di `/src/components/SettingsPanel.tsx`.
-3. **Penyimpanan Offline-First & Dukungan Web Manifest:**
-   - **Web App Manifest (`public/manifest.json`):** Konfigurasi ikon aplikasi resolusi tinggi, tema `#0f172a`, mode tampilan `standalone`, dan orientasi `portrait-primary`.
-   - **Dukungan Tema Dinamis:** Terang (*Light Mode*), Gelap (*Dark Mode*), dan *Luxury Gold*. Preferensi disimpan di `localStorage` (`catatkeu_theme`).
-   - **Kunci Penyimpanan LocalStorage:**
-     - `fahkeu_transactions`: Daftar seluruh objek transaksi.
-     - `fahkeu_messages`: Riwayat percakapan chat bot.
-     - `fahkeu_settings`: Konfigurasi integrasi Google Sheets & Telegram.
-     - `fahkeu_offline_queue`: Antrean mutasi data saat offline.
-
----
-
-## 6. Spesifikasi Desain & Antarmuka Pengguna (UI/UX)
-
-### 6.1 Palet Warna Sistem
-- **Primary Accent (Emerald):** `#10b981` (Emerald-500), `#059669` (Emerald-600), `#047857` (Emerald-700)
-- **Expense Alert (Rose):** `#f43f5e` (Rose-500), `#e11d48` (Rose-600)
-- **Neutral Dark Canvas (Slate):** `#020617` (Slate-950), `#0f172a` (Slate-900), `#1e293b` (Slate-800)
-- **Neutral Light Canvas:** `#ffffff` (White), `#f8fafc` (Slate-50), `#f1f5f9` (Slate-100), `#e2e8f0` (Slate-200)
-
-### 6.2 Tipografi & Hierarki Teks
-- **Body Font:** Inter / System UI Sans-Serif (Legibilitas tinggi untuk angka moneter).
-- **Scale:** H1 (24px/30px), H2 (18px/24px), Body (14px/20px), Caption (11px–12px), Micro (9px–10px).
-
-### 6.3 Tata Letak Responsif
-- **Mobile Viewport ($< 1024\text{px}$):** Tab navigasi bawah (*Bottom Navigation Bar*) tetap (*sticky*) dengan 3 tombol utama: *Chat*, *Grafik Analisis*, dan *Pengaturan*.
-- **Desktop/Tablet Viewport ($\ge 1024\text{px}$):** Tata letak *Master-Detail Split Grid* 2 kolom: Sisi kiri menampilkan Chat Interaktif berkecepatan tinggi, sisi kanan menampilkan Dasbor Analitik & Statistik secara bersamaan.
-
----
-
-## 7. Panduan Rekonstruksi Langkah-demi-Langkah (Build 100% Identik)
-
-Untuk membangun ulang proyek ini dari awal secara presisi, ikuti langkah berikut:
-
-### Langkah 1: Inisialisasi Proyek Vite React TypeScript
 ```bash
-npm create vite@latest fahkeu -- --template react-ts
-cd fahkeu
-```
-
-### Langkah 2: Instalasi Dependensi Inti
-```bash
-npm install lucide-react recharts jspdf tesseract.js motion clsx tailwind-merge
-npm install -D tailwindcss @tailwindcss/vite
-```
-
-### Langkah 3: Konfigurasi Tailwind CSS di `vite.config.ts`
-Pastikan plugin Tailwind telah diaktifkan:
-```typescript
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
-
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  server: {
-    port: 3000,
-    host: '0.0.0.0'
-  }
-});
-```
-
-### Langkah 4: Susunan Struktur Folder
-Bangun struktur direktori persis seperti berikut:
-```
-/
-├── public/
-│   ├── manifest.json
-│   ├── favicon.ico
-│   └── icon-512.png
+fahkeu/
+├── public/                      # Aset publik statis (favicon, manifest)
 ├── src/
-│   ├── components/
-│   │   ├── ChatInterface.tsx    # Antarmuka chat, in-app camera, & OCR handler
-│   │   ├── Dashboard.tsx        # Grafik Recharts, filter periode, & buku kas
-│   │   └── SettingsPanel.tsx    # Konfigurasi Google Sheets & panduan Telegram
-│   ├── utils/
-│   │   ├── categories.ts        # Daftar 9 kategori, ikon, dan keyword matcher
-│   │   ├── code.gs.ts           # Template skrip backend Google Apps Script
-│   │   ├── parser.ts            # Parser NLP bahasa alami Bahasa Indonesia
-│   │   ├── pdfGenerator.ts      # Generator laporan PDF profesional jsPDF
-│   │   └── receiptParser.ts     # Heuristik pembersih teks OCR struk
-│   ├── App.tsx                  # Root state management & layout orchestration
-│   ├── index.css                # @import "tailwindcss";
-│   ├── main.tsx                 # Entrypoint React
-│   └── types.ts                 # Definisi tipe & interface TypeScript
-├── index.html
-├── package.json
-└── tsconfig.json
+│   ├── components/              # Komponen antarmuka pengguna (UI)
+│   │   ├── ChatInterface.tsx    # Antarmuka ruang obrolan cerdas & suggestion chips
+│   │   ├── Dashboard.tsx        # Dasbor metrik, grafik recharts, & riwayat mutasi
+│   │   ├── ReceiptScanner.tsx   # Pemindai kamera in-memory & penampil hasil OCR
+│   │   └── SettingsPanel.tsx    # Konfigurasi Google Sheets, Telegram, & unduhan APK
+│   ├── utils/                   # Pustaka logika, parser, & generator
+│   │   ├── code.gs.ts           # Skrip Google Apps Script terpusat & siap salin
+│   │   ├── nlpParser.ts         # Mesin parser regex bahasa Indonesia alami
+│   │   ├── ocrService.ts        # Algoritma ekstraksi teks struk belanjaan
+│   │   └── pdfGenerator.ts      # Mesin perender PDF vektor profesional
+│   ├── App.tsx                  # Komponen induk, state global, & pengelola tema
+│   ├── index.css                # Konfigurasi global Tailwind CSS
+│   ├── main.tsx                 # Titik masuk utama aplikasi React
+│   └── types.ts                 # Skema data & antarmuka TypeScript lengkap
+├── index.html                   # Entry point dokumen HTML dengan meta SEO
+├── package.json                 # Daftar dependensi dan skrip proyek
+├── tsconfig.json                # Konfigurasi kompilator TypeScript
+└── README.md                    # Dokumentasi lengkap & spesifikasi produk
 ```
 
 ---
 
-## 8. Matriks Penanganan Error & Kasus Tepi (Edge Cases)
+## 🚀 Panduan Memulai Cepat (Quickstart)
 
-| Skenario Kasus Tepi | Potensi Masalah | Solusi Penanganan yang Diimplementasikan |
-|---|---|---|
-| **Izin Kamera Ditolak Pengguna** | Aplikasi crash atau video hitam kosong saat buka kamera. | Penangkapan blok `try/catch` pada `getUserMedia`, menampilkan notifikasi peringatan santun, dan otomatis mengalihkan pengguna ke tombol pilih file dari galeri. |
-| **Foto Struk Buram / Terbalik** | OCR menghasilkan teks acak (*garbage text*). | Heuristik *fallback* nilai default $0$, disertai dialog pratinjau hasil deteksi di mana pengguna dapat mengedit angka & deskripsi sebelum disimpan. |
-| **Pesan Chat Tanpa Angka** (misal *"halo bot"*) | Parser menghasilkan transaksi bernilai 0 atau salah rekam. | Parser mengembalikan status `success: false`. Bot memberikan respons panduan ramah dengan contoh penulisan yang benar. |
-| **Tabel PDF Lebih dari 5 Halaman** | Teks terpotong di tepi bawah kertas. | Logika `checkPageOverflow` dinamis otomatis membuat halaman baru dan menggambar ulang `drawTableHeader` serta footer penomoran. |
-| **Koneksi Internet Putus Saat Simpan** | Data hilang jika sinkronisasi Google Sheets gagal. | Data selalu disimpan terlebih dahulu ke `localStorage`, mutasi gagal dimasukkan ke `offlineActionQueue` untuk dicoba kembali saat online. |
-| **Tombol Run di Apps Script Error `Cannot read properties of undefined (parameter)`** | Mengklik "Jalankan" pada fungsi `doGet` atau `doPost` di editor Google Apps Script tanpa parameter event `e`. | Skrip telah diproteksi dengan `e = e || {}` serta disediakan fungsi khusus `testSheet()` untuk uji coba koneksi & pembuatan tabel sheet secara aman langsung dari editor Apps Script. |
-| **Data Web Tidak Masuk ke Spreadsheet (CORS / Payload Block)** | Browser memblokir pengiriman POST lintas domain (*CORS preflight*). | Menggunakan payload `text/plain;charset=utf-8` dengan mode `no-cors` dan mekanisme fallback otomatis ke endpoint `doGet` (`?action=add&data=...`) untuk menjamin 100% data tersimpan di Google Sheet. |
+### 1. Prasyarat Sistem
+Pastikan perangkat Anda telah terpasang:
+* **Node.js:** Versi 18.0.0 atau lebih baru.
+* **npm:** Versi 9.0.0 atau lebih baru (atau pnpm / yarn).
 
----
+### 2. Pemasangan Dependensi & Menjalankan Lokal
+```bash
+# 1. Pasang semua dependensi
+npm install
 
-## 9. Panduan Deployment & Konfigurasi Lingkungan
-
-### 9.1 Berkas `.env`
-Buat berkas `.env` dari contoh `.env.example`:
-```env
-# URL tempat aplikasi di-hosting (opsional untuk referensi webhook)
-APP_URL="http://localhost:3000"
-
-# Kunci API Gemini (jika mengaktifkan asisten AI server-side tambahan)
-GEMINI_API_KEY=""
+# 2. Jalankan server pengembangan lokal
+npm run dev
 ```
+Buka peramban di `http://localhost:3000` untuk mulai menggunakan aplikasi FahKeu.
 
-### 9.2 Kompilasi & Build Produksi
+### 3. Kompilasi Produksi (Production Build)
 ```bash
 npm run build
 ```
-Output berkas statis siap saji akan dibuat di folder `/dist`, kompatibel 100% dengan platform hosting modern:
-- **Vercel / Netlify / Cloudflare Pages:** Drag-and-drop folder `dist` atau hubungkan repositori GitHub.
-- **GitHub Pages:** Atur direktori publik ke `dist`.
-- **Cloud Run / Docker Container:** Sajikan folder `dist` menggunakan web server ringan Nginx atau Node.js static server.
+Hasil berkas produksi siap diunggah ke Vercel, Netlify, Cloudflare Pages, atau server Nginx melalui folder `/dist`.
 
 ---
 
-## 10. Panduan Pengaturan Tautan Google Drive & Modifikasi di GitHub
+## 📖 Panduan Menghubungkan Google Spreadsheet & Apps Script
 
-Bagian ini menjelaskan cara mengelola tombol unduhan Android & Desktop secara manual di GitHub:
+Aplikasi FahKeu menggunakan Google Spreadsheet milik Anda sendiri sebagai database. Ikuti langkah 1 menit berikut:
 
-### 10.1 Cara Memasukkan Link Google Drive Sendiri (Android & Desktop)
-
-1. Buka berkas **`/src/components/SettingsPanel.tsx`** di repositori GitHub Anda.
-2. Klik ikon pensil (**Edit this file**) di GitHub.
-3. Di bagian paling atas berkas (baris 25–28), temukan variabel tautan:
-   ```typescript
-   // ============================================================================
-   // KONFIGURASI TAUTAN UNDUHAN GOOGLE DRIVE (Android & Desktop)
-   // Masukkan link Google Drive / file APK / file Installer Desktop Anda di sini:
-   // ============================================================================
-   export const DOWNLOAD_LINK_ANDROID = "https://drive.google.com/drive/folders/LINK_GOOGLE_DRIVE_APK_ANDA";
-   export const DOWNLOAD_LINK_DESKTOP = "https://drive.google.com/drive/folders/LINK_GOOGLE_DRIVE_DESKTOP_ANDA";
-   ```
-4. Ganti URL contoh di atas dengan tautan file / folder Google Drive Anda yang sudah diatur izin publiknya (*Anyone with the link can view/download*).
-5. Klik tombol hijau **Commit changes...**.
+1. Buka [Google Sheets](https://sheets.new) dan buat lembar kerja baru.
+2. Klik menu **Ekstensi > Apps Script**.
+3. Di dalam editor `Code.gs`, hapus semua kode bawaan (tekan **`Ctrl + A`** lalu **`Backspace`** sampai bersih).
+4. Buka tab **Pengaturan** di aplikasi FahKeu, klik tombol **"Salin Kode"** pada kotak kode Apps Script di sebelah kanan.
+5. Tempelkan (**`Ctrl + V`**) ke editor `Code.gs`, lalu klik tombol **Simpan 💾 (`Ctrl + S`)**.
+6. Klik tombol **Terapkan > Penerapan Baru** (Deploy > New Deployment).
+7. Klik ikon gerigi (Pilih Jenis), pilih **Aplikasi Web** (Web App).
+   * *Jalankan sebagai:* **Saya** (Email Google Anda)
+   * *Yang memiliki akses:* **Siapa saja** (Anyone)
+8. Klik **Terapkan** (Deploy). Izinkan akses keamanan akun Google Anda.
+9. Salin **URL Aplikasi Web** yang berakhiran `/exec`, lalu masukkan ke kolom **"URL Web App Google Apps Script"** di menu Pengaturan FahKeu, lalu klik **Simpan Konfigurasi**.
+10. Selesai! Seluruh pencatatan keuangan Anda sekarang otomatis tersinkronisasi ke Google Spreadsheet.
 
 ---
 
-### 10.2 Cara Menghapus Kartu Unduh Jika Tidak Diinginkan di Website
+## 🤖 Panduan Menghubungkan Bot Telegram
 
-Jika di masa mendatang Anda ingin menonaktifkan fitur unduh aplikasi ini di website:
-1. Buka berkas **`/src/components/SettingsPanel.tsx`** di GitHub Anda.
-2. Cari blok yang telah diapit penanda komentar:
-   - **Mulai:** `{/* [SECTION MULAI] FITUR UNDUH APLIKASI (ANDROID & DESKTOP VIA GOOGLE DRIVE) */}`
-   - **Selesai:** `{/* [SECTION SELESAI] FITUR UNDUH APLIKASI (ANDROID & DESKTOP VIA GOOGLE DRIVE) */}`
-3. Hapus seluruh blok tag `<div>` di antara kedua penanda tersebut.
-4. Klik **Commit changes...**. Halaman Pengaturan akan bersih tanpa error.
+1. Buka aplikasi Telegram, cari akun resmi **@BotFather**.
+2. Kirim perintah `/newbot`, lalu ikuti petunjuk untuk menentukan nama dan username bot Anda.
+3. BotFather akan memberikan sebuah **Bot Token** (contoh: `123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ`).
+4. Masuk ke tab **Pengaturan** di FahKeu:
+   * Masukkan **Bot Token** tersebut ke kolom yang disediakan.
+   * Pastikan URL Google Apps Script Anda sudah terisi dan tersimpan.
+   * Klik tombol **"Daftarkan Webhook Bot"**.
+5. Buka bot Telegram Anda, kirim pesan `/start`.
+6. Sekarang Anda dapat mencatat keuangan langsung dari chat Telegram kapan pun dan di mana pun!
 
 ---
 
-## 📜 Lisensi & Atribusi
-* **Pengembang:** Faiz_Fahmi_Id  
-* **Tahun Pembuatan:** 2026  
-* **Lisensi:** MIT License — Bebas digunakan, dipelajari, dan dikembangkan kembali.
+## 💬 Format Contoh Perintah Chat FahKeu
+
+| Tujuan | Contoh Pesan yang Bisa Diketik | Kategori Otomatis |
+|---|---|---|
+| **Catat Pengeluaran** | `beli kopi kenangan 24k` | Makanan & Minuman |
+| **Catat Pengeluaran** | `makan nasi padang 18rb` | Makanan & Minuman |
+| **Catat Pengeluaran** | `isi bensin motor 25000` | Transportasi |
+| **Catat Pengeluaran** | `bayar token listrik pln 100k` | Tagihan & Utilitas |
+| **Catat Pengeluaran** | `belanja indomaret sabun odol 45k` | Belanja & Pribadi |
+| **Catat Pengeluaran** | `nonton bioskop xxi 50rb` | Hiburan & Liburan |
+| **Catat Pengeluaran** | `beli obat panadol di apotek 15k` | Kesehatan |
+| **Catat Pemasukan** | `gaji bulanan kantor 6jt` | Gaji & Pemasukan |
+| **Catat Pemasukan** | `dapat transferan bonus 750k` | Bonus & Freelance |
+| **Cek Keuangan** | `sisa saldo` / `cek saldo` / `saldo` | Menampilkan Saldo & Mutasi |
+| **Unduh Laporan** | `download rekap` / `unduh pdf` | Membuat Berkas PDF Otomatis |
+| **Bersihkan Layar** | `hapus chat` / `bersihkan chat` | Mengosongkan Riwayat Obrolan |
+
+---
+
+## 🛡️ Penanganan Error & FAQ (Troubleshooting)
+
+### Q: Mengapa muncul error `SyntaxError: Unexpected identifier 'doc'` di Apps Script?
+> **Solusi:** Error ini terjadi jika masih terdapat sisa potongan kode lama di file `Code.gs` Anda. Buka file `Code.gs` di Google Apps Script, tekan **`Ctrl + A`** lalu tekan tombol **`Backspace/Delete`** pada keyboard sampai editor benar-benar kosong bersih. Setelah itu, tempelkan kode baru dari FahKeu dan klik Simpan 💾.
+
+### Q: Mengapa muncul error `TypeError: Cannot read properties of undefined (reading 'parameter')` saat klik "Jalankan"?
+> **Solusi:** Fungsi `doGet` dan `doPost` hanya bekerja saat dipanggil oleh aplikasi web via internet, bukan saat diklik manual. Jika ingin mencoba langsung di Apps Script, pilih fungsi **`testSheet`** pada menu dropdown fungsi di samping tombol "Jalankan", lalu klik "Jalankan".
+
+### Q: Apakah data keuangan saya aman?
+> **100% Aman.** FahKeu tidak menyimpan data keuangan Anda di server pihak ketiga. Semua data tersimpan di `localStorage` peramban Anda sendiri dan di Google Spreadsheet pribadi akun Google Anda.
+
+---
+
+## 👨‍💻 Hak Cipta & Lisensi
+
+* **Aplikasi:** FahKeu (Pencatat Keuangan Pintar & Interaktif)
+* **Karya Asli & Dikembangkan oleh:** **`faiz_fahmi_id`** (Faiz Fahmi Id)
+* **Tahun Pembuatan:** 2026
+* **Lisensi:** MIT License — Terbuka untuk digunakan, dipelajari, dan dikembangkan secara bebas dengan tetap menyertakan atribusi pengembang asli.
+
+---
+
+<div align="center">
+  <b>FahKeu — Dibuat dengan penuh dedikasi oleh faiz_fahmi_id © 2026</b><br/>
+  <i>Mencatat Keuangan Jadi Semudah Mengirim Pesan Chat.</i>
+</div>

@@ -932,14 +932,6 @@ function parseReceiptTextInScript(text) {
   };
 }
 
-function dummyReferences() {
-  // Dipanggil agar Apps Script otomatis mendeteksi scope Google Drive & Google Docs
-  try {
-    DriveApp.getRootFolder();
-    DocumentApp.create("Dummy_OCR");
-  } catch (e) {}
-}
-
 function getPdfHtmlTemplate(transactions, periodTitle) {
   var htmlString = '<!DOCTYPE html>\\n' +
 '<html>\\n' +

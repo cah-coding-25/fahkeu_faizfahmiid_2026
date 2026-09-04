@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Clipboard,
   Check,
@@ -16,7 +16,8 @@ import {
   Crown,
   Download,
   Smartphone,
-  Laptop
+  Laptop,
+  CheckCheck
 } from 'lucide-react';
 import { AppSettings } from '../types';
 import { GOOGLE_APPS_SCRIPT_CODE } from '../utils/code.gs';
@@ -52,7 +53,9 @@ export default function SettingsPanel({
       : Boolean(settings.googleSheetUrl)
   );
 
+  const codeTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [copied, setCopied] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState('');
   const [savedToast, setSavedToast] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<'idle' | 'success' | 'failed'>('idle');
@@ -73,10 +76,47 @@ export default function SettingsPanel({
   const [webhookStatus, setWebhookStatus] = useState<'idle' | 'loading' | 'success' | 'failed'>('idle');
   const [webhookMessage, setWebhookMessage] = useState('');
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE);
+  const handleCopyCode = async () => {
+    let success = false;
+    // Coba navigator.clipboard
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE);
+        success = true;
+      }
+    } catch (e) {
+      console.warn('Clipboard API not available or blocked, falling back to selection/execCommand', e);
+    }
+
+    // Fallback menggunakan seleksi textarea + execCommand
+    if (!success && codeTextareaRef.current) {
+      try {
+        codeTextareaRef.current.focus();
+        codeTextareaRef.current.select();
+        codeTextareaRef.current.setSelectionRange(0, 999999);
+        const execSuccess = document.execCommand('copy');
+        if (execSuccess) success = true;
+      } catch (err) {
+        console.warn('execCommand failed', err);
+      }
+    }
+
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopyFeedback(success ? 'Semua kode berhasil disalin ke clipboard!' : 'Teks telah diseleksi penuh! Tekan Ctrl+C untuk menyalin.');
+    setTimeout(() => {
+      setCopied(false);
+      setCopyFeedback('');
+    }, 4000);
+  };
+
+  const handleSelectAllCode = () => {
+    if (codeTextareaRef.current) {
+      codeTextareaRef.current.focus();
+      codeTextareaRef.current.select();
+      codeTextareaRef.current.setSelectionRange(0, 999999);
+      setCopyFeedback('Seluruh kode telah diseleksi! Silakan tekan tombol Ctrl+C untuk menyalin.');
+      setTimeout(() => setCopyFeedback(''), 4000);
+    }
   };
 
   const handleSave = () => {
@@ -480,30 +520,62 @@ export default function SettingsPanel({
 
         {/* Code View Area (1 col on lg) */}
         <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm p-5 flex flex-col space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-900 pb-3">
+          <div className="flex flex-wrap items-center justify-between border-b border-slate-100 dark:border-slate-900 pb-3 gap-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
               <Code className="w-4.5 h-4.5 text-emerald-600" />
               <span>Kode Google Apps Script (Code.gs)</span>
             </h2>
             
-            <button
-              onClick={handleCopyCode}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition ${
-                copied
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950 dark:border-emerald-900'
-                  : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
-              }`}
-            >
-              {copied ? <Check className="w-3 h-3" /> : <Clipboard className="w-3 h-3" />}
-              <span>{copied ? 'Tersalin' : 'Salin Kode'}</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={handleSelectAllCode}
+                title="Pilih seluruh isi kode di textarea"
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold transition bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+              >
+                <span>Pilih Semua (Ctrl+A)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition ${
+                  copied
+                    ? 'bg-emerald-500 border-emerald-600 text-white dark:bg-emerald-600'
+                    : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                }`}
+              >
+                {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Clipboard className="w-3.5 h-3.5" />}
+                <span>{copied ? 'Tersalin!' : 'Salin Kode'}</span>
+              </button>
+            </div>
+          </div>
+
+          {copyFeedback && (
+            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center space-x-2 animate-fadeIn">
+              <Check className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <span>{copyFeedback}</span>
+            </div>
+          )}
+
+          {/* Solusi Khusus Error Syntax Unexpected identifier 'doc' */}
+          <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/50 rounded-xl text-[11px] text-amber-800 dark:text-amber-200 space-y-1">
+            <div className="flex items-center space-x-1.5 font-bold text-amber-900 dark:text-amber-300">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>PENTING jika muncul error 'Unexpected identifier doc' di Apps Script:</span>
+            </div>
+            <p className="leading-relaxed">
+              Error tersebut terjadi karena masih tersisa baris kode lama di editor Google Apps Script Anda.
+              <b> Cara Bersih:</b> Buka <code className="font-mono bg-amber-100/80 dark:bg-amber-900/60 px-1 py-0.5 rounded">Code.gs</code> di Apps Script, tekan <kbd className="px-1 py-0.5 bg-white dark:bg-slate-800 border rounded shadow-xs font-mono font-bold">Ctrl + A</kbd> lalu tekan <kbd className="px-1 py-0.5 bg-white dark:bg-slate-800 border rounded shadow-xs font-mono font-bold">Backspace</kbd> sampai kosong bersih, lalu tekan <kbd className="px-1 py-0.5 bg-white dark:bg-slate-800 border rounded shadow-xs font-mono font-bold">Ctrl + V</kbd> untuk menempelkan kode baru, dan klik <b>Simpan (Ctrl+S)</b>.
+            </p>
           </div>
 
           <p className="text-[10px] text-slate-400 leading-relaxed">
-            Klik "Salin Kode" di atas lalu tempelkan ke halaman editor Google Apps Script Anda. Kode ini sudah otomatis dibekali parser regex pintar yang sama.
+            Klik tombol "Salin Kode" di atas, lalu tempelkan ke halaman editor Google Apps Script Anda menggantikan seluruh isi file Code.gs sebelumnya.
           </p>
 
           <textarea
+            ref={codeTextareaRef}
             readOnly
             value={GOOGLE_APPS_SCRIPT_CODE}
             className="flex-1 w-full min-h-[350px] p-3.5 bg-slate-900 text-emerald-400 font-mono text-[10px] rounded-xl border border-slate-800 focus:outline-none resize-none scrollbar-thin overflow-y-auto"
